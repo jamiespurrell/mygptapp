@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Notes Daily Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <h1>Voice Notes Daily Planner</h1>
+      <p class="subtitle">Record a quick voice note and convert it into a ranked to-do list.</p>
+
+      <section class="card">
+        <h2>1) Record your note</h2>
+        <div class="record-controls">
+          <button id="recordBtn">Start Recording</button>
+          <span id="recordingStatus">Idle</span>
+        </div>
+        <audio id="audioPlayback" controls></audio>
+        <button id="transcribeBtn">Use Speech Recognition</button>
+        <textarea
+          id="noteInput"
+          rows="4"
+          placeholder="Your transcribed note will appear here, or type manually."
+        ></textarea>
+      </section>
+
+      <section class="card">
+        <h2>2) Add tasks</h2>
+        <div class="task-form">
+          <input id="taskTitle" type="text" placeholder="Task title" />
+          <input id="taskDue" type="date" />
+          <select id="taskUrgency">
+            <option value="1">Low urgency</option>
+            <option value="2" selected>Medium urgency</option>
+            <option value="3">High urgency</option>
+          </select>
+          <button id="addTaskBtn">Add Task</button>
+        </div>
+        <button id="parseNoteBtn">Create Tasks From Note</button>
+      </section>
+
+      <section class="card">
+        <h2>3) Priority ranked list</h2>
+        <ul id="taskList"></ul>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

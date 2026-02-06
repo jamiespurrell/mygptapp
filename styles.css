@@ -1,0 +1,102 @@
+:root {
+  font-family: Arial, sans-serif;
+  color: #102a43;
+  background: #f0f4f8;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  max-width: 860px;
+  margin: 2rem auto;
+  padding: 0 1rem 2rem;
+}
+
+h1 {
+  margin-bottom: 0.4rem;
+}
+
+.subtitle {
+  margin-top: 0;
+  color: #486581;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(16, 42, 67, 0.08);
+}
+
+.record-controls,
+.task-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border-radius: 7px;
+  border: 1px solid #bcccdc;
+}
+
+button {
+  background: #2f80ed;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1366d6;
+}
+
+textarea,
+#taskTitle {
+  width: 100%;
+  margin-top: 0.7rem;
+}
+
+#taskList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #d9e2ec;
+  padding: 0.75rem 0;
+}
+
+.priority-pill {
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+
+.priority-high {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.priority-medium {
+  background: #fff3cd;
+  color: #664d03;
+}
+
+.priority-low {
+  background: #d1e7dd;
+  color: #0f5132;
+}
