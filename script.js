@@ -15,6 +15,7 @@ const taskUrgency = document.getElementById('taskUrgency');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
 const priorityChips = document.getElementById('priorityChips');
+const taskViewControls = document.getElementById('taskViewControls');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -24,18 +25,23 @@ let chunks = [];
 let isRecording = false;
 let latestRecordingDataUrl = '';
 let selectedNoteForTask = null;
+let currentTaskView = 'active';
 
 const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
 const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
 
+tasks.forEach((task) => {
+  if (typeof task.archived !== 'boolean') task.archived = false;
+});
+
 renderNotes();
 persistAndRenderTasks();
 setRecordingButtons();
+syncChipSelection();
+syncTaskViewButtons();
 
 recordBtn.addEventListener('click', async () => {
-  if (isRecording) {
-    return;
-  }
+  if (isRecording) return;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -45,8 +51,7 @@ recordBtn.addEventListener('click', async () => {
     recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = async () => {
       const blob = new Blob(chunks, { type: 'audio/webm' });
-      const playbackUrl = URL.createObjectURL(blob);
-      audioPlayback.src = playbackUrl;
+      audioPlayback.src = URL.createObjectURL(blob);
       latestRecordingDataUrl = await blobToDataURL(blob);
       recordingStatus.textContent = 'Recording captured! Add a title or notes, then save.';
     };
@@ -55,25 +60,20 @@ recordBtn.addEventListener('click', async () => {
     isRecording = true;
     setRecordingButtons();
     recordingStatus.textContent = 'Recording now...';
-  } catch (error) {
+  } catch {
     recordingStatus.textContent = 'Microphone access denied.';
   }
 });
 
 stopBtn.addEventListener('click', () => {
-  if (!isRecording || !recorder) {
-    return;
-  }
-
+  if (!isRecording || !recorder) return;
   recorder.stop();
   isRecording = false;
   setRecordingButtons();
 });
 
 saveNoteBtn.addEventListener('click', () => {
-  if (!noteTitle.value.trim() && !noteInput.value.trim()) {
-    return;
-  }
+  if (!noteTitle.value.trim() && !noteInput.value.trim()) return;
 
   notes.unshift({
     id: crypto.randomUUID(),
@@ -95,9 +95,7 @@ discardNoteBtn.addEventListener('click', () => {
 });
 
 addTaskBtn.addEventListener('click', () => {
-  if (!taskTitle.value.trim()) {
-    return;
-  }
+  if (!taskTitle.value.trim()) return;
 
   tasks.push({
     id: crypto.randomUUID(),
@@ -107,6 +105,7 @@ addTaskBtn.addEventListener('click', () => {
     urgency: Number(taskUrgency.value),
     linkedNoteId: selectedNoteForTask?.id || null,
     linkedAudioUrl: selectedNoteForTask?.audioDataUrl || '',
+    archived: false,
     score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
   });
 
@@ -121,15 +120,11 @@ addTaskBtn.addEventListener('click', () => {
 
 voiceNotesList.addEventListener('click', (event) => {
   const createTaskButton = event.target.closest('[data-action="create-task"]');
-  if (!createTaskButton) {
-    return;
-  }
+  if (!createTaskButton) return;
 
   const noteId = createTaskButton.getAttribute('data-note-id');
   const selectedNote = notes.find((note) => note.id === noteId);
-  if (!selectedNote) {
-    return;
-  }
+  if (!selectedNote) return;
 
   selectedNoteForTask = selectedNote;
   taskTitle.value = selectedNote.title;
@@ -140,9 +135,7 @@ voiceNotesList.addEventListener('click', (event) => {
 
 priorityChips.addEventListener('click', (event) => {
   const chip = event.target.closest('[data-urgency]');
-  if (!chip) {
-    return;
-  }
+  if (!chip) return;
 
   taskUrgency.value = chip.getAttribute('data-urgency');
   recordingStatus.textContent = `Priority set to ${chip.textContent.trim()}.`;
@@ -150,7 +143,39 @@ priorityChips.addEventListener('click', (event) => {
 });
 
 taskUrgency.addEventListener('change', syncChipSelection);
-syncChipSelection();
+
+taskViewControls.addEventListener('click', (event) => {
+  const viewButton = event.target.closest('[data-view]');
+  if (!viewButton) return;
+
+  currentTaskView = viewButton.getAttribute('data-view');
+  syncTaskViewButtons();
+  renderTasks();
+});
+
+taskList.addEventListener('click', (event) => {
+  const actionButton = event.target.closest('[data-task-action]');
+  if (!actionButton) return;
+
+  const taskId = actionButton.getAttribute('data-task-id');
+  const action = actionButton.getAttribute('data-task-action');
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return;
+
+  if (action === 'archive') {
+    task.archived = true;
+    recordingStatus.textContent = 'Task archived.';
+  } else if (action === 'restore') {
+    task.archived = false;
+    recordingStatus.textContent = 'Task restored.';
+  } else if (action === 'delete') {
+    const idx = tasks.findIndex((t) => t.id === taskId);
+    if (idx >= 0) tasks.splice(idx, 1);
+    recordingStatus.textContent = 'Task deleted.';
+  }
+
+  persistAndRenderTasks();
+});
 
 function setRecordingButtons() {
   recordBtn.disabled = isRecording;
@@ -174,10 +199,7 @@ function blobToDataURL(blob) {
 
 function computePriorityScore(dueDate, urgency) {
   let score = urgency * 30;
-
-  if (!dueDate) {
-    return score;
-  }
+  if (!dueDate) return score;
 
   const today = new Date();
   const due = new Date(dueDate);
@@ -199,6 +221,7 @@ function persistAndRenderTasks() {
   tasks.sort((a, b) => b.score - a.score);
   localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(tasks));
   renderTasks();
+  syncTaskViewButtons();
 }
 
 function getPriorityMeta(urgency) {
@@ -210,12 +233,13 @@ function getPriorityMeta(urgency) {
 function renderTasks() {
   taskList.innerHTML = '';
 
-  if (!tasks.length) {
-    taskList.innerHTML = '<li class="empty-item">No tasks yet. Add your first to-do above!</li>';
+  const shown = tasks.filter((task) => (currentTaskView === 'archived' ? task.archived : !task.archived));
+  if (!shown.length) {
+    taskList.innerHTML = `<li class="empty-item">${currentTaskView === 'archived' ? 'No archived tasks yet.' : 'No active tasks yet. Add your first to-do above!'}</li>`;
     return;
   }
 
-  tasks.forEach((task) => {
+  shown.forEach((task) => {
     const li = document.createElement('li');
     li.className = 'task-item';
 
@@ -224,11 +248,18 @@ function renderTasks() {
       ? `<audio controls class="task-audio"><source src="${task.linkedAudioUrl}" type="audio/webm"></audio>`
       : '';
 
+    const actions = task.archived
+      ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>
+         <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`
+      : `<button class="btn btn-secondary btn-small" data-task-action="archive" data-task-id="${task.id}">Archive</button>
+         <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`;
+
     li.innerHTML = `
       <div>
         <strong>${task.title}</strong><br>
         <small>${task.details || 'No details'} • Due: ${task.dueDate || 'No date'}</small>
         ${linkedAudio}
+        <div class="task-actions">${actions}</div>
       </div>
       <span class="priority-pill priority-${priority.className}">${priority.label}</span>
     `;
@@ -257,8 +288,19 @@ function renderNotes() {
 function syncChipSelection() {
   const selectedUrgency = Number(taskUrgency.value);
   const chips = priorityChips.querySelectorAll('[data-urgency]');
-
   chips.forEach((chip) => {
     chip.classList.toggle('chip-selected', Number(chip.getAttribute('data-urgency')) === selectedUrgency);
+  });
+}
+
+function syncTaskViewButtons() {
+  const archivedCount = tasks.filter((task) => task.archived).length;
+  const activeCount = tasks.length - archivedCount;
+
+  taskViewControls.querySelectorAll('[data-view]').forEach((btn) => {
+    const view = btn.getAttribute('data-view');
+    btn.classList.toggle('view-active', view === currentTaskView);
+    if (view === 'active') btn.textContent = `Active Tasks (${activeCount})`;
+    if (view === 'archived') btn.textContent = `Archived Tasks (${archivedCount})`;
   });
 }

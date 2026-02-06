@@ -192,3 +192,25 @@ textarea { resize: vertical; min-height: 110px; }
   margin-top: 0.5rem;
   max-width: 360px;
 }
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.task-views {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.task-views .view-active {
+  background: #1f6fff;
+  border-color: #1f6fff;
+}
+
+.task-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.45rem;
+}
