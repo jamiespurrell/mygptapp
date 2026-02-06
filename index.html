@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Voice Notes & Task Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <h1>Daily Voice Notes &amp; Task Planner</h1>
+        <p>
+          Capture quick voice memos and organize your daily tasks by priority so you can focus on
+          what matters most.
+        </p>
+      </header>
+
+      <section class="layout">
+        <article class="panel">
+          <h2>Voice Notes</h2>
+
+          <div class="row buttons-inline">
+            <button id="recordBtn" class="btn btn-primary">Start Recording</button>
+            <button id="stopBtn" class="btn btn-danger">Stop Recording</button>
+          </div>
+
+          <p id="recordingStatus" class="status">Ready to record.</p>
+          <audio id="audioPlayback" controls></audio>
+
+          <label for="noteTitle">Title</label>
+          <input id="noteTitle" type="text" placeholder="Morning planning" />
+
+          <label for="noteInput">Notes</label>
+          <textarea id="noteInput" rows="4" placeholder="Context or follow up"></textarea>
+
+          <div class="row stack-mobile">
+            <button id="saveNoteBtn" class="btn btn-primary btn-wide">Save Voice Note</button>
+            <button id="discardNoteBtn" class="btn btn-muted btn-wide">Discard</button>
+          </div>
+
+          <div id="voiceNotesList" class="empty-box">No voice notes yet. Start recording to capture one!</div>
+        </article>
+
+        <article class="panel">
+          <h2>Daily To-Do List</h2>
+
+          <label for="taskTitle">Task</label>
+          <input id="taskTitle" type="text" placeholder="Plan weekly meals" />
+
+          <label for="taskDetails">Details (optional)</label>
+          <textarea id="taskDetails" rows="4" placeholder="Add helpful notes"></textarea>
+
+          <label for="taskUrgency">Priority</label>
+          <select id="taskUrgency">
+            <option value="3">High</option>
+            <option value="2" selected>Medium</option>
+            <option value="1">Low</option>
+          </select>
+
+          <label for="taskDue">Due date (optional)</label>
+          <input id="taskDue" type="date" />
+
+          <button id="addTaskBtn" class="btn btn-primary btn-wide">Add Task</button>
+
+          <div class="chips">
+            <span class="chip high">HIGH</span>
+            <span class="chip medium">MEDIUM</span>
+            <span class="chip low">LOW</span>
+          </div>
+
+          <ul id="taskList" class="task-list"></ul>
+        </article>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
