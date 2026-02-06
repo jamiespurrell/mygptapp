@@ -14,6 +14,7 @@ const taskDue = document.getElementById('taskDue');
 const taskUrgency = document.getElementById('taskUrgency');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
+const priorityChips = document.getElementById('priorityChips');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -21,12 +22,15 @@ const NOTE_STORAGE_KEY = 'voice-note-items';
 let recorder;
 let chunks = [];
 let isRecording = false;
+let latestRecordingDataUrl = '';
+let selectedNoteForTask = null;
 
 const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
 const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
 
 renderNotes();
 persistAndRenderTasks();
+setRecordingButtons();
 
 recordBtn.addEventListener('click', async () => {
   if (isRecording) {
@@ -39,14 +43,17 @@ recordBtn.addEventListener('click', async () => {
     chunks = [];
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       const blob = new Blob(chunks, { type: 'audio/webm' });
-      audioPlayback.src = URL.createObjectURL(blob);
+      const playbackUrl = URL.createObjectURL(blob);
+      audioPlayback.src = playbackUrl;
+      latestRecordingDataUrl = await blobToDataURL(blob);
       recordingStatus.textContent = 'Recording captured! Add a title or notes, then save.';
     };
 
     recorder.start();
     isRecording = true;
+    setRecordingButtons();
     recordingStatus.textContent = 'Recording now...';
   } catch (error) {
     recordingStatus.textContent = 'Microphone access denied.';
@@ -60,6 +67,7 @@ stopBtn.addEventListener('click', () => {
 
   recorder.stop();
   isRecording = false;
+  setRecordingButtons();
 });
 
 saveNoteBtn.addEventListener('click', () => {
@@ -71,6 +79,7 @@ saveNoteBtn.addEventListener('click', () => {
     id: crypto.randomUUID(),
     title: noteTitle.value.trim() || 'Untitled Note',
     content: noteInput.value.trim(),
+    audioDataUrl: latestRecordingDataUrl,
     createdAt: new Date().toISOString(),
   });
 
@@ -96,6 +105,8 @@ addTaskBtn.addEventListener('click', () => {
     details: taskDetails.value.trim(),
     dueDate: taskDue.value,
     urgency: Number(taskUrgency.value),
+    linkedNoteId: selectedNoteForTask?.id || null,
+    linkedAudioUrl: selectedNoteForTask?.audioDataUrl || '',
     score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
   });
 
@@ -103,7 +114,9 @@ addTaskBtn.addEventListener('click', () => {
   taskDetails.value = '';
   taskDue.value = '';
   taskUrgency.value = '2';
+  selectedNoteForTask = null;
   persistAndRenderTasks();
+  syncChipSelection();
 });
 
 voiceNotesList.addEventListener('click', (event) => {
@@ -118,16 +131,45 @@ voiceNotesList.addEventListener('click', (event) => {
     return;
   }
 
+  selectedNoteForTask = selectedNote;
   taskTitle.value = selectedNote.title;
   taskDetails.value = selectedNote.content;
   taskTitle.focus();
   recordingStatus.textContent = 'Task fields populated from selected voice note.';
 });
 
+priorityChips.addEventListener('click', (event) => {
+  const chip = event.target.closest('[data-urgency]');
+  if (!chip) {
+    return;
+  }
+
+  taskUrgency.value = chip.getAttribute('data-urgency');
+  recordingStatus.textContent = `Priority set to ${chip.textContent.trim()}.`;
+  syncChipSelection();
+});
+
+taskUrgency.addEventListener('change', syncChipSelection);
+syncChipSelection();
+
+function setRecordingButtons() {
+  recordBtn.disabled = isRecording;
+  stopBtn.disabled = !isRecording;
+}
+
 function clearNoteForm() {
   noteTitle.value = '';
   noteInput.value = '';
   audioPlayback.removeAttribute('src');
+  latestRecordingDataUrl = '';
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result || '');
+    reader.readAsDataURL(blob);
+  });
 }
 
 function computePriorityScore(dueDate, urgency) {
@@ -159,6 +201,12 @@ function persistAndRenderTasks() {
   renderTasks();
 }
 
+function getPriorityMeta(urgency) {
+  if (urgency === 3) return { label: 'High', className: 'high' };
+  if (urgency === 2) return { label: 'Medium', className: 'medium' };
+  return { label: 'Low', className: 'low' };
+}
+
 function renderTasks() {
   taskList.innerHTML = '';
 
@@ -171,15 +219,18 @@ function renderTasks() {
     const li = document.createElement('li');
     li.className = 'task-item';
 
-    const priority = task.score >= 120 ? 'High' : task.score >= 70 ? 'Medium' : 'Low';
-    const priorityClass = priority.toLowerCase();
+    const priority = getPriorityMeta(task.urgency);
+    const linkedAudio = task.linkedAudioUrl
+      ? `<audio controls class="task-audio"><source src="${task.linkedAudioUrl}" type="audio/webm"></audio>`
+      : '';
 
     li.innerHTML = `
       <div>
         <strong>${task.title}</strong><br>
         <small>${task.details || 'No details'} • Due: ${task.dueDate || 'No date'}</small>
+        ${linkedAudio}
       </div>
-      <span class="priority-pill priority-${priorityClass}">${priority}</span>
+      <span class="priority-pill priority-${priority.className}">${priority.label}</span>
     `;
 
     taskList.appendChild(li);
@@ -194,9 +245,20 @@ function renderNotes() {
 
   voiceNotesList.innerHTML = notes
     .slice(0, 4)
-    .map(
-      (note) =>
-        `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div><small>${note.content || 'No note text'}</small><div class="saved-note-actions"><button class="btn btn-secondary" data-action="create-task" data-note-id="${note.id}">Create Task</button></div></article>`,
-    )
+    .map((note) => {
+      const noteAudio = note.audioDataUrl
+        ? `<audio controls class="saved-note-audio"><source src="${note.audioDataUrl}" type="audio/webm"></audio>`
+        : '';
+      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div><small>${note.content || 'No note text'}</small>${noteAudio}<div class="saved-note-actions"><button class="btn btn-secondary" data-action="create-task" data-note-id="${note.id}">Create Task</button></div></article>`;
+    })
     .join('');
+}
+
+function syncChipSelection() {
+  const selectedUrgency = Number(taskUrgency.value);
+  const chips = priorityChips.querySelectorAll('[data-urgency]');
+
+  chips.forEach((chip) => {
+    chip.classList.toggle('chip-selected', Number(chip.getAttribute('data-urgency')) === selectedUrgency);
+  });
 }

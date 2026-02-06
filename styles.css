@@ -97,6 +97,11 @@ textarea { resize: vertical; min-height: 110px; }
   cursor: pointer;
 }
 
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .btn-primary { background: var(--primary); }
 .btn-danger { background: var(--danger); }
 .btn-muted { background: transparent; border: 1px solid #3c527c; }
@@ -145,7 +150,15 @@ textarea { resize: vertical; min-height: 110px; }
   padding: 0.25rem 0.75rem;
   font-weight: 700;
   font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
 }
+
+.chip-selected {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset;
+  transform: translateY(-1px);
+}
+
 .chip.high { background: #54303b; color: #ffd9df; }
 .chip.medium { background: #5a5230; color: #ffefb1; }
 .chip.low { background: #234747; color: #c8ffea; }
@@ -174,3 +187,8 @@ textarea { resize: vertical; min-height: 110px; }
 .saved-note-head { margin-bottom: 0.3rem; }
 .saved-note-actions { margin-top: 0.7rem; display: flex; justify-content: flex-end; }
 .saved-note-actions .btn { padding: 0.45rem 0.9rem; }
+.saved-note-audio,
+.task-audio {
+  margin-top: 0.5rem;
+  max-width: 360px;
+}

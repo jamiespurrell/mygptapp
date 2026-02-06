@@ -22,7 +22,7 @@
 
           <div class="row buttons-inline">
             <button id="recordBtn" class="btn btn-primary">Start Recording</button>
-            <button id="stopBtn" class="btn btn-danger">Stop Recording</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>Stop Recording</button>
           </div>
 
           <p id="recordingStatus" class="status">Ready to record.</p>
@@ -63,10 +63,10 @@
 
           <button id="addTaskBtn" class="btn btn-primary btn-wide">Add Task</button>
 
-          <div class="chips">
-            <span class="chip high">HIGH</span>
-            <span class="chip medium">MEDIUM</span>
-            <span class="chip low">LOW</span>
+          <div class="chips" id="priorityChips" aria-label="Choose priority label">
+            <button type="button" class="chip high" data-urgency="3">HIGH</button>
+            <button type="button" class="chip medium" data-urgency="2">MEDIUM</button>
+            <button type="button" class="chip low" data-urgency="1">LOW</button>
           </div>
 
           <ul id="taskList" class="task-list"></ul>
