@@ -1,11 +1,11 @@
-# Voice Notes Daily Planner
+# Daily Voice Notes & Task Planner
 
-A super simple web app to:
+A simple dark-themed web app to:
 
-- record voice notes,
-- transcribe speech (browser support required),
-- turn notes into tasks,
-- and rank tasks by priority.
+- record and save quick voice notes,
+- create daily tasks with details, due date, and priority,
+- auto-rank tasks by urgency + due-date proximity,
+- keep everything in browser `localStorage`.
 
 ## Run locally
 
@@ -13,19 +13,9 @@ A super simple web app to:
 python3 -m http.server 8000
 ```
 
-Then open: `http://localhost:8000`
+Open `http://localhost:8000`.
 
-## How priority works
+## Browser APIs used
 
-Each task gets a score based on:
-
-- **Urgency** (low/medium/high), and
-- **Due date** (overdue and near-term tasks score higher).
-
-The task list is always sorted highest score first.
-
-## Notes
-
-- Voice recording uses the browser `MediaRecorder` API.
-- Speech recognition uses `SpeechRecognition` / `webkitSpeechRecognition` when available.
-- Tasks are stored in `localStorage`.
+- `MediaRecorder` for voice capture
+- `getUserMedia` for microphone access

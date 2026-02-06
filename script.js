@@ -1,75 +1,87 @@
 const recordBtn = document.getElementById('recordBtn');
-const transcribeBtn = document.getElementById('transcribeBtn');
+const stopBtn = document.getElementById('stopBtn');
 const recordingStatus = document.getElementById('recordingStatus');
 const audioPlayback = document.getElementById('audioPlayback');
+const noteTitle = document.getElementById('noteTitle');
 const noteInput = document.getElementById('noteInput');
+const saveNoteBtn = document.getElementById('saveNoteBtn');
+const discardNoteBtn = document.getElementById('discardNoteBtn');
+const voiceNotesList = document.getElementById('voiceNotesList');
+
 const taskTitle = document.getElementById('taskTitle');
+const taskDetails = document.getElementById('taskDetails');
 const taskDue = document.getElementById('taskDue');
 const taskUrgency = document.getElementById('taskUrgency');
 const addTaskBtn = document.getElementById('addTaskBtn');
-const parseNoteBtn = document.getElementById('parseNoteBtn');
 const taskList = document.getElementById('taskList');
+
+const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
+const NOTE_STORAGE_KEY = 'voice-note-items';
 
 let recorder;
 let chunks = [];
 let isRecording = false;
-const STORAGE_KEY = 'voice-notes-priority-tasks';
 
-const tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-renderTasks();
+const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
+const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
+
+renderNotes();
+persistAndRenderTasks();
 
 recordBtn.addEventListener('click', async () => {
-  if (!isRecording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recorder = new MediaRecorder(stream);
-      chunks = [];
+  if (isRecording) {
+    return;
+  }
 
-      recorder.ondataavailable = (event) => chunks.push(event.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        audioPlayback.src = URL.createObjectURL(blob);
-      };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recorder = new MediaRecorder(stream);
+    chunks = [];
 
-      recorder.start();
-      isRecording = true;
-      recordBtn.textContent = 'Stop Recording';
-      recordingStatus.textContent = 'Recording...';
-    } catch (error) {
-      recordingStatus.textContent = 'Microphone access denied.';
-    }
+    recorder.ondataavailable = (event) => chunks.push(event.data);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      audioPlayback.src = URL.createObjectURL(blob);
+      recordingStatus.textContent = 'Recording captured! Add a title or notes, then save.';
+    };
+
+    recorder.start();
+    isRecording = true;
+    recordingStatus.textContent = 'Recording now...';
+  } catch (error) {
+    recordingStatus.textContent = 'Microphone access denied.';
+  }
+});
+
+stopBtn.addEventListener('click', () => {
+  if (!isRecording || !recorder) {
     return;
   }
 
   recorder.stop();
   isRecording = false;
-  recordBtn.textContent = 'Start Recording';
-  recordingStatus.textContent = 'Saved recording.';
 });
 
-transcribeBtn.addEventListener('click', () => {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (!SpeechRecognition) {
-    recordingStatus.textContent = 'Speech recognition is not available in this browser.';
+saveNoteBtn.addEventListener('click', () => {
+  if (!noteTitle.value.trim() && !noteInput.value.trim()) {
     return;
   }
 
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
+  notes.unshift({
+    id: crypto.randomUUID(),
+    title: noteTitle.value.trim() || 'Untitled Note',
+    content: noteInput.value.trim(),
+    createdAt: new Date().toISOString(),
+  });
 
-  recordingStatus.textContent = 'Listening for speech...';
-  recognition.start();
+  localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
+  clearNoteForm();
+  renderNotes();
+});
 
-  recognition.onresult = (event) => {
-    noteInput.value = event.results[0][0].transcript;
-    recordingStatus.textContent = 'Transcription captured.';
-  };
-
-  recognition.onerror = () => {
-    recordingStatus.textContent = 'Could not transcribe audio.';
-  };
+discardNoteBtn.addEventListener('click', () => {
+  clearNoteForm();
+  recordingStatus.textContent = 'Draft discarded.';
 });
 
 addTaskBtn.addEventListener('click', () => {
@@ -77,76 +89,64 @@ addTaskBtn.addEventListener('click', () => {
     return;
   }
 
-  tasks.push(createTask(taskTitle.value.trim(), taskDue.value, Number(taskUrgency.value)));
-  persistAndRender();
-  taskTitle.value = '';
-});
-
-parseNoteBtn.addEventListener('click', () => {
-  const parts = noteInput.value
-    .split(/[\n\.;,]/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  parts.forEach((text) => {
-    tasks.push(createTask(text, '', inferUrgency(text)));
+  tasks.push({
+    id: crypto.randomUUID(),
+    title: taskTitle.value.trim(),
+    details: taskDetails.value.trim(),
+    dueDate: taskDue.value,
+    urgency: Number(taskUrgency.value),
+    score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
   });
 
-  persistAndRender();
+  taskTitle.value = '';
+  taskDetails.value = '';
+  taskDue.value = '';
+  taskUrgency.value = '2';
+  persistAndRenderTasks();
 });
 
-function createTask(title, dueDate, urgency) {
-  const createdAt = new Date().toISOString();
-  const score = computePriorityScore(dueDate, urgency);
-  return {
-    id: crypto.randomUUID(),
-    title,
-    dueDate,
-    urgency,
-    createdAt,
-    score,
-  };
-}
-
-function inferUrgency(text) {
-  const lowered = text.toLowerCase();
-  if (/(urgent|asap|today|immediately|important)/.test(lowered)) {
-    return 3;
-  }
-  if (/(soon|tomorrow|this week)/.test(lowered)) {
-    return 2;
-  }
-  return 1;
+function clearNoteForm() {
+  noteTitle.value = '';
+  noteInput.value = '';
+  audioPlayback.removeAttribute('src');
 }
 
 function computePriorityScore(dueDate, urgency) {
   let score = urgency * 30;
 
-  if (dueDate) {
-    const now = new Date();
-    const due = new Date(dueDate);
-    const days = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-
-    if (days <= 0) score += 100;
-    else if (days <= 1) score += 60;
-    else if (days <= 3) score += 40;
-    else if (days <= 7) score += 20;
+  if (!dueDate) {
+    return score;
   }
+
+  const today = new Date();
+  const due = new Date(dueDate);
+  const days = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+
+  if (days <= 0) score += 100;
+  else if (days <= 1) score += 60;
+  else if (days <= 3) score += 40;
+  else if (days <= 7) score += 20;
 
   return score;
 }
 
-function persistAndRender() {
+function persistAndRenderTasks() {
   tasks.forEach((task) => {
     task.score = computePriorityScore(task.dueDate, task.urgency);
   });
+
   tasks.sort((a, b) => b.score - a.score);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(tasks));
   renderTasks();
 }
 
 function renderTasks() {
   taskList.innerHTML = '';
+
+  if (!tasks.length) {
+    taskList.innerHTML = '<li class="empty-item">No tasks yet. Add your first to-do above!</li>';
+    return;
+  }
 
   tasks.forEach((task) => {
     const li = document.createElement('li');
@@ -157,12 +157,27 @@ function renderTasks() {
 
     li.innerHTML = `
       <div>
-        <strong>${task.title}</strong><br />
-        <small>Due: ${task.dueDate || 'No due date'} | Urgency: ${task.urgency}</small>
+        <strong>${task.title}</strong><br>
+        <small>${task.details || 'No details'} • Due: ${task.dueDate || 'No date'}</small>
       </div>
-      <div class="priority-pill priority-${priorityClass}">${priority}</div>
+      <span class="priority-pill priority-${priorityClass}">${priority}</span>
     `;
 
     taskList.appendChild(li);
   });
+}
+
+function renderNotes() {
+  if (!notes.length) {
+    voiceNotesList.textContent = 'No voice notes yet. Start recording to capture one!';
+    return;
+  }
+
+  voiceNotesList.innerHTML = notes
+    .slice(0, 4)
+    .map(
+      (note) =>
+        `<div class="saved-note"><strong>${note.title}</strong><br><small>${note.content || 'No note text'}</small></div>`,
+    )
+    .join('');
 }
