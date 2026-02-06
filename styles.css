@@ -214,3 +214,10 @@ textarea { resize: vertical; min-height: 110px; }
   display: flex;
   gap: 0.45rem;
 }
+
+.delete-notice {
+  margin: 0.55rem 0 0;
+  color: #ffcf9d;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

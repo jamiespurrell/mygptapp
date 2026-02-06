@@ -19,6 +19,8 @@ const taskViewControls = document.getElementById('taskViewControls');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
+const DELETE_RETENTION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 let recorder;
 let chunks = [];
@@ -32,8 +34,10 @@ const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
 
 tasks.forEach((task) => {
   if (typeof task.archived !== 'boolean') task.archived = false;
+  if (!task.deletedAt) task.deletedAt = null;
 });
 
+purgeExpiredDeletedTasks();
 renderNotes();
 persistAndRenderTasks();
 setRecordingButtons();
@@ -106,6 +110,7 @@ addTaskBtn.addEventListener('click', () => {
     linkedNoteId: selectedNoteForTask?.id || null,
     linkedAudioUrl: selectedNoteForTask?.audioDataUrl || '',
     archived: false,
+    deletedAt: null,
     score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
   });
 
@@ -167,11 +172,13 @@ taskList.addEventListener('click', (event) => {
     recordingStatus.textContent = 'Task archived.';
   } else if (action === 'restore') {
     task.archived = false;
+    task.deletedAt = null;
+    currentTaskView = 'active';
     recordingStatus.textContent = 'Task restored.';
   } else if (action === 'delete') {
-    const idx = tasks.findIndex((t) => t.id === taskId);
-    if (idx >= 0) tasks.splice(idx, 1);
-    recordingStatus.textContent = 'Task deleted.';
+    task.deletedAt = new Date().toISOString();
+    task.archived = false;
+    recordingStatus.textContent = `Task moved to Deleted (auto-removes in ${DELETE_RETENTION_DAYS} days).`;
   }
 
   persistAndRenderTasks();
@@ -203,7 +210,7 @@ function computePriorityScore(dueDate, urgency) {
 
   const today = new Date();
   const due = new Date(dueDate);
-  const days = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  const days = Math.ceil((due - today) / DAY_MS);
 
   if (days <= 0) score += 100;
   else if (days <= 1) score += 60;
@@ -213,7 +220,22 @@ function computePriorityScore(dueDate, urgency) {
   return score;
 }
 
+function purgeExpiredDeletedTasks() {
+  const now = Date.now();
+  for (let i = tasks.length - 1; i >= 0; i -= 1) {
+    const deletedAt = tasks[i].deletedAt;
+    if (!deletedAt) continue;
+
+    const ageMs = now - new Date(deletedAt).getTime();
+    if (ageMs >= DELETE_RETENTION_DAYS * DAY_MS) {
+      tasks.splice(i, 1);
+    }
+  }
+}
+
 function persistAndRenderTasks() {
+  purgeExpiredDeletedTasks();
+
   tasks.forEach((task) => {
     task.score = computePriorityScore(task.dueDate, task.urgency);
   });
@@ -230,12 +252,29 @@ function getPriorityMeta(urgency) {
   return { label: 'Low', className: 'low' };
 }
 
+function getDaysUntilPermanentDelete(deletedAt) {
+  const elapsedDays = Math.floor((Date.now() - new Date(deletedAt).getTime()) / DAY_MS);
+  return Math.max(0, DELETE_RETENTION_DAYS - elapsedDays);
+}
+
 function renderTasks() {
   taskList.innerHTML = '';
 
-  const shown = tasks.filter((task) => (currentTaskView === 'archived' ? task.archived : !task.archived));
+  const shown = tasks.filter((task) => {
+    if (currentTaskView === 'deleted') return Boolean(task.deletedAt);
+    if (task.deletedAt) return false;
+    if (currentTaskView === 'archived') return task.archived;
+    return !task.archived;
+  });
+
   if (!shown.length) {
-    taskList.innerHTML = `<li class="empty-item">${currentTaskView === 'archived' ? 'No archived tasks yet.' : 'No active tasks yet. Add your first to-do above!'}</li>`;
+    const emptyLabel =
+      currentTaskView === 'archived'
+        ? 'No archived tasks yet.'
+        : currentTaskView === 'deleted'
+          ? 'No deleted tasks.'
+          : 'No active tasks yet. Add your first to-do above!';
+    taskList.innerHTML = `<li class="empty-item">${emptyLabel}</li>`;
     return;
   }
 
@@ -248,17 +287,24 @@ function renderTasks() {
       ? `<audio controls class="task-audio"><source src="${task.linkedAudioUrl}" type="audio/webm"></audio>`
       : '';
 
-    const actions = task.archived
-      ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>
-         <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`
-      : `<button class="btn btn-secondary btn-small" data-task-action="archive" data-task-id="${task.id}">Archive</button>
-         <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`;
+    const deleteNotice = task.deletedAt
+      ? `<p class="delete-notice">Permanently deleted in ${getDaysUntilPermanentDelete(task.deletedAt)} day(s).</p>`
+      : '';
+
+    const actions = task.deletedAt
+      ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>`
+      : task.archived
+        ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>
+           <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`
+        : `<button class="btn btn-secondary btn-small" data-task-action="archive" data-task-id="${task.id}">Archive</button>
+           <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`;
 
     li.innerHTML = `
       <div>
         <strong>${task.title}</strong><br>
         <small>${task.details || 'No details'} • Due: ${task.dueDate || 'No date'}</small>
         ${linkedAudio}
+        ${deleteNotice}
         <div class="task-actions">${actions}</div>
       </div>
       <span class="priority-pill priority-${priority.className}">${priority.label}</span>
@@ -294,13 +340,15 @@ function syncChipSelection() {
 }
 
 function syncTaskViewButtons() {
-  const archivedCount = tasks.filter((task) => task.archived).length;
-  const activeCount = tasks.length - archivedCount;
+  const deletedCount = tasks.filter((task) => task.deletedAt).length;
+  const archivedCount = tasks.filter((task) => !task.deletedAt && task.archived).length;
+  const activeCount = tasks.filter((task) => !task.deletedAt && !task.archived).length;
 
   taskViewControls.querySelectorAll('[data-view]').forEach((btn) => {
     const view = btn.getAttribute('data-view');
     btn.classList.toggle('view-active', view === currentTaskView);
     if (view === 'active') btn.textContent = `Active Tasks (${activeCount})`;
     if (view === 'archived') btn.textContent = `Archived Tasks (${archivedCount})`;
+    if (view === 'deleted') btn.textContent = `Deleted Tasks (${deletedCount})`;
   });
 }
