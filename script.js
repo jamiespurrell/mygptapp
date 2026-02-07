@@ -15,21 +15,27 @@ const taskUrgency = document.getElementById('taskUrgency');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
 
-const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
-const NOTE_STORAGE_KEY = 'voice-note-items';
+const authSection = document.getElementById('authSection');
+const appSection = document.getElementById('appSection');
+const authMessage = document.getElementById('authMessage');
+const authButtons = document.getElementById('authButtons');
+const openSignInBtn = document.getElementById('openSignInBtn');
+const openSignUpBtn = document.getElementById('openSignUpBtn');
+const userControls = document.getElementById('userControls');
+const welcomeUser = document.getElementById('welcomeUser');
+const signOutBtn = document.getElementById('signOutBtn');
+const clerkContainer = document.getElementById('clerkContainer');
 
 let recorder;
 let chunks = [];
 let isRecording = false;
-
-const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
-const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
-
-renderNotes();
-persistAndRenderTasks();
+let clerkClient = null;
+let currentUserId = null;
+let tasks = [];
+let notes = [];
 
 recordBtn.addEventListener('click', async () => {
-  if (isRecording) {
+  if (isRecording || !currentUserId) {
     return;
   }
 
@@ -63,7 +69,7 @@ stopBtn.addEventListener('click', () => {
 });
 
 saveNoteBtn.addEventListener('click', () => {
-  if (!noteTitle.value.trim() && !noteInput.value.trim()) {
+  if (!currentUserId || (!noteTitle.value.trim() && !noteInput.value.trim())) {
     return;
   }
 
@@ -74,7 +80,7 @@ saveNoteBtn.addEventListener('click', () => {
     createdAt: new Date().toISOString(),
   });
 
-  localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
+  localStorage.setItem(getNoteStorageKey(), JSON.stringify(notes));
   clearNoteForm();
   renderNotes();
 });
@@ -85,7 +91,7 @@ discardNoteBtn.addEventListener('click', () => {
 });
 
 addTaskBtn.addEventListener('click', () => {
-  if (!taskTitle.value.trim()) {
+  if (!currentUserId || !taskTitle.value.trim()) {
     return;
   }
 
@@ -104,6 +110,122 @@ addTaskBtn.addEventListener('click', () => {
   taskUrgency.value = '2';
   persistAndRenderTasks();
 });
+
+openSignInBtn.addEventListener('click', () => {
+  if (!clerkClient) {
+    return;
+  }
+
+  authMessage.textContent = 'Use your credentials to sign in.';
+  clerkClient.mountSignIn(clerkContainer, {
+    appearance: {
+      elements: {
+        card: 'box-shadow: none; background: transparent; border: 0;',
+      },
+    },
+  });
+});
+
+openSignUpBtn.addEventListener('click', () => {
+  if (!clerkClient) {
+    return;
+  }
+
+  authMessage.textContent = 'Create an account to get started.';
+  clerkClient.mountSignUp(clerkContainer, {
+    appearance: {
+      elements: {
+        card: 'box-shadow: none; background: transparent; border: 0;',
+      },
+    },
+  });
+});
+
+signOutBtn.addEventListener('click', async () => {
+  if (!clerkClient) {
+    return;
+  }
+
+  await clerkClient.signOut();
+});
+
+initAuth();
+
+async function initAuth() {
+  const publishableKey = window.CLERK_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    authSection.classList.remove('hidden');
+    authMessage.textContent =
+      'Clerk is not configured yet. Set window.CLERK_PUBLISHABLE_KEY in index.html to enable sign in/sign up.';
+    return;
+  }
+
+  if (!window.Clerk) {
+    authMessage.textContent = 'Unable to load Clerk. Check your internet connection and refresh.';
+    return;
+  }
+
+  try {
+    await window.Clerk.load({ publishableKey });
+    clerkClient = window.Clerk;
+
+    clerkClient.addListener(({ user }) => {
+      syncSignedInState(user || null);
+    });
+
+    syncSignedInState(clerkClient.user || null);
+  } catch (error) {
+    authMessage.textContent = 'Failed to initialize Clerk. Verify your publishable key and try again.';
+  }
+}
+
+function syncSignedInState(user) {
+  if (!user) {
+    currentUserId = null;
+    tasks = [];
+    notes = [];
+    clearNoteForm();
+
+    appSection.classList.add('hidden');
+    authButtons.classList.remove('hidden');
+    userControls.classList.add('hidden');
+    authSection.classList.remove('hidden');
+    authMessage.textContent = 'Sign in or create an account to access your planner.';
+    voiceNotesList.textContent = 'No voice notes yet. Start recording to capture one!';
+    taskList.innerHTML = '<li class="empty-item">No tasks yet. Add your first to-do above!</li>';
+    return;
+  }
+
+  currentUserId = user.id;
+  loadUserData();
+
+  authButtons.classList.add('hidden');
+  userControls.classList.remove('hidden');
+  appSection.classList.remove('hidden');
+  welcomeUser.textContent = `Signed in as ${user.primaryEmailAddress?.emailAddress || user.username || user.id}`;
+  authMessage.textContent = 'Authentication successful.';
+
+  if (clerkContainer.innerHTML.trim()) {
+    clerkClient.unmountSignIn(clerkContainer);
+    clerkClient.unmountSignUp(clerkContainer);
+  }
+}
+
+function loadUserData() {
+  tasks = JSON.parse(localStorage.getItem(getTaskStorageKey()) || '[]');
+  notes = JSON.parse(localStorage.getItem(getNoteStorageKey()) || '[]');
+  renderNotes();
+  persistAndRenderTasks();
+}
+
+function getTaskStorageKey() {
+  return `voice-notes-priority-tasks:${currentUserId}`;
+}
+
+function getNoteStorageKey() {
+  return `voice-note-items:${currentUserId}`;
+}
 
 function clearNoteForm() {
   noteTitle.value = '';
@@ -136,7 +258,11 @@ function persistAndRenderTasks() {
   });
 
   tasks.sort((a, b) => b.score - a.score);
-  localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(tasks));
+
+  if (currentUserId) {
+    localStorage.setItem(getTaskStorageKey(), JSON.stringify(tasks));
+  }
+
   renderTasks();
 }
 
