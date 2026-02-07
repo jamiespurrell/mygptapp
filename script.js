@@ -55,6 +55,11 @@ syncChipSelection();
 syncTaskViewButtons();
 syncNoteViewButtons();
 
+document.addEventListener('click', (event) => {
+  if (event.target.closest('.item-menu')) return;
+  closeAllMenus();
+});
+
 recordBtn.addEventListener('click', async () => {
   if (isRecording) return;
 
@@ -154,6 +159,13 @@ addTaskBtn.addEventListener('click', () => {
 });
 
 voiceNotesList.addEventListener('click', (event) => {
+  const menuToggle = event.target.closest('[data-menu-toggle]');
+  if (menuToggle) {
+    const menuId = menuToggle.getAttribute('data-menu-toggle');
+    toggleMenu(menuId);
+    return;
+  }
+
   const noteActionButton = event.target.closest('[data-note-action]');
   if (!noteActionButton) return;
 
@@ -188,6 +200,8 @@ voiceNotesList.addEventListener('click', (event) => {
     persistNotes();
     renderNotes();
   }
+
+  closeAllMenus();
 });
 
 noteViewControls.addEventListener('click', (event) => {
@@ -220,6 +234,13 @@ taskViewControls.addEventListener('click', (event) => {
 });
 
 taskList.addEventListener('click', (event) => {
+  const menuToggle = event.target.closest('[data-menu-toggle]');
+  if (menuToggle) {
+    const menuId = menuToggle.getAttribute('data-menu-toggle');
+    toggleMenu(menuId);
+    return;
+  }
+
   const actionButton = event.target.closest('[data-task-action]');
   if (!actionButton) return;
 
@@ -243,6 +264,7 @@ taskList.addEventListener('click', (event) => {
   }
 
   persistAndRenderTasks();
+  closeAllMenus();
 });
 
 function setRecordingButtons() {
@@ -367,13 +389,19 @@ function renderTasks() {
       ? `<p class="delete-notice">Permanently deleted in ${getDaysUntilPermanentDelete(task.deletedAt)} day(s).</p>`
       : '';
 
-    const actions = task.deletedAt
-      ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>`
+    const menuItems = task.deletedAt
+      ? [`<button type="button" class="menu-item" data-task-action="restore" data-task-id="${task.id}">Restore</button>`]
       : task.archived
-        ? `<button class="btn btn-secondary btn-small" data-task-action="restore" data-task-id="${task.id}">Restore</button>
-           <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`
-        : `<button class="btn btn-secondary btn-small" data-task-action="archive" data-task-id="${task.id}">Archive</button>
-           <button class="btn btn-danger btn-small" data-task-action="delete" data-task-id="${task.id}">Delete</button>`;
+        ? [
+            `<button type="button" class="menu-item" data-task-action="restore" data-task-id="${task.id}">Restore</button>`,
+            `<button type="button" class="menu-item danger" data-task-action="delete" data-task-id="${task.id}">Delete</button>`,
+          ]
+        : [
+            `<button type="button" class="menu-item" data-task-action="archive" data-task-id="${task.id}">Archive</button>`,
+            `<button type="button" class="menu-item danger" data-task-action="delete" data-task-id="${task.id}">Delete</button>`,
+          ];
+
+    const taskMenu = buildActionMenu(`task-${task.id}`, menuItems.join(''));
 
     li.innerHTML = `
       <div>
@@ -381,9 +409,11 @@ function renderTasks() {
         <small>${(task.details || 'No details').replace(/\n/g, '<br>')} • Due: ${task.dueDate || 'No date'}</small>
         ${linkedAudio}
         ${deleteNotice}
-        <div class="task-actions">${actions}</div>
       </div>
-      <span class="priority-pill priority-${priority.className}">${priority.label}</span>
+      <div class="item-right-rail">
+        <span class="priority-pill priority-${priority.className}">${priority.label}</span>
+        ${taskMenu}
+      </div>
     `;
 
     taskList.appendChild(li);
@@ -423,18 +453,46 @@ function renderNotes() {
         ? `<p class="delete-notice">Permanently deleted in ${getDaysUntilPermanentDelete(note.deletedAt)} day(s).</p>`
         : '';
 
-      const actions = note.deletedAt
-        ? `<button class="btn btn-secondary btn-small" data-note-action="restore" data-note-id="${note.id}">Restore</button>`
+      const menuItems = note.deletedAt
+        ? [`<button type="button" class="menu-item" data-note-action="restore" data-note-id="${note.id}">Restore</button>`]
         : note.archived
-          ? `<button class="btn btn-secondary btn-small" data-note-action="restore" data-note-id="${note.id}">Restore</button>
-             <button class="btn btn-danger btn-small" data-note-action="delete" data-note-id="${note.id}">Delete</button>`
-          : `<button class="btn btn-secondary btn-small" data-note-action="create-task" data-note-id="${note.id}" ${note.taskCreated ? 'disabled' : ''}>${note.taskCreated ? 'Task Created' : 'Create Task'}</button>
-             <button class="btn btn-muted btn-small" data-note-action="archive" data-note-id="${note.id}">Archive</button>
-             <button class="btn btn-danger btn-small" data-note-action="delete" data-note-id="${note.id}">Delete</button>`;
+          ? [
+              `<button type="button" class="menu-item" data-note-action="restore" data-note-id="${note.id}">Restore</button>`,
+              `<button type="button" class="menu-item danger" data-note-action="delete" data-note-id="${note.id}">Delete</button>`,
+            ]
+          : [
+              `<button type="button" class="menu-item ${note.taskCreated ? 'disabled-item' : ''}" data-note-action="create-task" data-note-id="${note.id}" ${note.taskCreated ? 'disabled' : ''}>${note.taskCreated ? 'Task Created' : 'Create Task'}</button>`,
+              `<button type="button" class="menu-item" data-note-action="archive" data-note-id="${note.id}">Archive</button>`,
+              `<button type="button" class="menu-item danger" data-note-action="delete" data-note-id="${note.id}">Delete</button>`,
+            ];
 
-      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div>${stamped}<small>${note.content || 'No note text'}</small>${noteAudio}${deleteNotice}<div class="saved-note-actions">${actions}</div></article>`;
+      const noteMenu = buildActionMenu(`note-${note.id}`, menuItems.join(''));
+
+      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong>${noteMenu}</div>${stamped}<small>${note.content || 'No note text'}</small>${noteAudio}${deleteNotice}</article>`;
     })
     .join('');
+}
+
+function buildActionMenu(menuId, itemsHtml) {
+  return `
+    <div class="item-menu" data-menu-id="${menuId}">
+      <button type="button" class="menu-trigger" data-menu-toggle="${menuId}" aria-label="Open actions menu">⋯</button>
+      <div class="menu-panel">${itemsHtml}</div>
+    </div>
+  `;
+}
+
+function toggleMenu(menuId) {
+  const targetMenu = document.querySelector(`[data-menu-id="${menuId}"]`);
+  if (!targetMenu) return;
+
+  const isOpen = targetMenu.classList.contains('menu-open');
+  closeAllMenus();
+  if (!isOpen) targetMenu.classList.add('menu-open');
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.item-menu.menu-open').forEach((menu) => menu.classList.remove('menu-open'));
 }
 
 function formatDateTime(isoString) {
