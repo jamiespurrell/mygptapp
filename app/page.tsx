@@ -1,6 +1,6 @@
 'use client';
 
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { SignIn, SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Task = {
@@ -149,8 +149,11 @@ export default function HomePage() {
     <main className="app">
       <SignedOut>
         <section className="panel auth-panel">
-          <h2>Sign in to continue</h2>
-          <p className="status">Use the Sign In or Sign Up buttons above to access your planner.</p>
+          <h2>Welcome back</h2>
+          <p className="status">Sign in below to access your planner. New here? Use the sign-up link under the form.</p>
+          <div className="inline-auth">
+            <SignIn />
+          </div>
         </section>
       </SignedOut>
 
