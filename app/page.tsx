@@ -58,6 +58,7 @@ export default function HomePage() {
   const [taskPageSize, setTaskPageSize] = useState(5);
   const [taskFromDate, setTaskFromDate] = useState('');
   const [taskToDate, setTaskToDate] = useState('');
+  const [taskMenuOpenId, setTaskMenuOpenId] = useState<string | null>(null);
 
   const [noteTitle, setNoteTitle] = useState('');
   const [noteInput, setNoteInput] = useState('');
@@ -105,6 +106,7 @@ export default function HomePage() {
 
   useEffect(() => setNotesPage(1), [notesTab, notesPageSize, noteFromDate, noteToDate]);
   useEffect(() => setTaskPage(1), [taskTab, taskPageSize, taskFromDate, taskToDate]);
+  useEffect(() => setTaskMenuOpenId(null), [taskTab, taskPage, taskFromDate, taskToDate]);
 
   function computePriorityScore(dueDate: string, urgency: number) {
     let score = urgency * 30;
@@ -202,6 +204,48 @@ export default function HomePage() {
     setTaskDetails(`${noteContext}\n\n${source}`);
     setTaskTab('active');
     setTaskPage(1);
+  }
+
+
+  function addTaskToCalendar(task: Task) {
+    const startDate = task.dueDate ? new Date(`${task.dueDate}T09:00:00`) : new Date(task.createdAt);
+    if (Number.isNaN(startDate.getTime())) return;
+
+    const endDate = new Date(startDate);
+    endDate.setHours(startDate.getHours() + 1);
+
+    const toIcsDate = (date: Date) =>
+      date
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\.\d{3}/, '');
+
+    const sanitize = (value: string) => value.replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+
+    const event = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Daily Voice Notes Planner//EN',
+      'BEGIN:VEVENT',
+      `UID:${crypto.randomUUID()}`,
+      `DTSTAMP:${toIcsDate(new Date())}Z`,
+      `DTSTART:${toIcsDate(startDate)}`,
+      `DTEND:${toIcsDate(endDate)}`,
+      `SUMMARY:${sanitize(task.title)}`,
+      `DESCRIPTION:${sanitize(task.details || 'Task from Daily To-Do list')}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([event], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${task.title || 'task'}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function updateTaskStatus(id: string, status: ItemStatus) {
@@ -403,10 +447,36 @@ export default function HomePage() {
                       </div>
                       <div className="right-stack">
                         <span className={`priority-pill priority-${priority.toLowerCase()}`}>{priority}</span>
-                        <div className="item-actions">
-                          {taskTab !== 'active' && <button className="mini-btn" onClick={() => updateTaskStatus(task.id, 'active')}>Activate</button>}
-                          {taskTab !== 'archived' && <button className="mini-btn" onClick={() => updateTaskStatus(task.id, 'archived')}>Archive</button>}
-                          {taskTab !== 'deleted' && <button className="mini-btn mini-danger" onClick={() => updateTaskStatus(task.id, 'deleted')}>Delete</button>}
+                        <div className="task-menu-wrap">
+                          <button
+                            className="menu-trigger"
+                            onClick={() => setTaskMenuOpenId((prev) => (prev === task.id ? null : task.id))}
+                            aria-label="Open task actions"
+                          >
+                            •••
+                          </button>
+                          {taskMenuOpenId === task.id && (
+                            <div className="task-dropdown">
+                              {taskTab !== 'active' && (
+                                <button className="task-dropdown-item" onClick={() => { updateTaskStatus(task.id, 'active'); setTaskMenuOpenId(null); }}>
+                                  Activate
+                                </button>
+                              )}
+                              {taskTab !== 'archived' && (
+                                <button className="task-dropdown-item" onClick={() => { updateTaskStatus(task.id, 'archived'); setTaskMenuOpenId(null); }}>
+                                  Archive
+                                </button>
+                              )}
+                              <button className="task-dropdown-item" onClick={() => { addTaskToCalendar(task); setTaskMenuOpenId(null); }}>
+                                Add to Calendar
+                              </button>
+                              {taskTab !== 'deleted' && (
+                                <button className="task-dropdown-item task-dropdown-danger" onClick={() => { updateTaskStatus(task.id, 'deleted'); setTaskMenuOpenId(null); }}>
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </li>
