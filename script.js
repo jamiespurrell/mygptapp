@@ -17,6 +17,15 @@ const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
 const priorityChips = document.getElementById('priorityChips');
 const taskViewControls = document.getElementById('taskViewControls');
+const taskPageSize = document.getElementById('taskPageSize');
+const taskPrevBtn = document.getElementById('taskPrevBtn');
+const taskNextBtn = document.getElementById('taskNextBtn');
+const taskPageInfo = document.getElementById('taskPageInfo');
+
+const notePageSize = document.getElementById('notePageSize');
+const notePrevBtn = document.getElementById('notePrevBtn');
+const noteNextBtn = document.getElementById('noteNextBtn');
+const notePageInfo = document.getElementById('notePageInfo');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -30,6 +39,8 @@ let latestRecordingDataUrl = '';
 let selectedNoteForTask = null;
 let currentTaskView = 'active';
 let currentNoteView = 'active';
+let taskPage = 1;
+let notePage = 1;
 
 const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
 const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
@@ -54,6 +65,8 @@ setRecordingButtons();
 syncChipSelection();
 syncTaskViewButtons();
 syncNoteViewButtons();
+syncTaskPaginationControls(1, 1);
+syncNotePaginationControls(1, 1);
 
 document.addEventListener('click', (event) => {
   if (event.target.closest('.item-menu')) return;
@@ -209,6 +222,7 @@ noteViewControls.addEventListener('click', (event) => {
   if (!button) return;
 
   currentNoteView = button.getAttribute('data-note-view');
+  notePage = 1;
   syncNoteViewButtons();
   renderNotes();
 });
@@ -224,11 +238,42 @@ priorityChips.addEventListener('click', (event) => {
 
 taskUrgency.addEventListener('change', syncChipSelection);
 
+taskPageSize.addEventListener('change', () => {
+  taskPage = 1;
+  renderTasks();
+});
+
+notePageSize.addEventListener('change', () => {
+  notePage = 1;
+  renderNotes();
+});
+
+taskPrevBtn.addEventListener('click', () => {
+  taskPage = Math.max(1, taskPage - 1);
+  renderTasks();
+});
+
+taskNextBtn.addEventListener('click', () => {
+  taskPage += 1;
+  renderTasks();
+});
+
+notePrevBtn.addEventListener('click', () => {
+  notePage = Math.max(1, notePage - 1);
+  renderNotes();
+});
+
+noteNextBtn.addEventListener('click', () => {
+  notePage += 1;
+  renderNotes();
+});
+
 taskViewControls.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-view]');
   if (!viewButton) return;
 
   currentTaskView = viewButton.getAttribute('data-view');
+  taskPage = 1;
   syncTaskViewButtons();
   renderTasks();
 });
@@ -365,7 +410,12 @@ function renderTasks() {
     return !task.archived;
   });
 
-  if (!shown.length) {
+  const pageSize = Number(taskPageSize.value);
+  const { items: pagedTasks, totalPages, safePage } = paginateItems(shown, taskPage, pageSize);
+  taskPage = safePage;
+  syncTaskPaginationControls(taskPage, totalPages);
+
+  if (!pagedTasks.length) {
     const emptyLabel =
       currentTaskView === 'archived'
         ? 'No archived tasks yet.'
@@ -376,7 +426,7 @@ function renderTasks() {
     return;
   }
 
-  shown.forEach((task) => {
+  pagedTasks.forEach((task) => {
     const li = document.createElement('li');
     li.className = 'task-item';
 
@@ -432,7 +482,12 @@ function renderNotes() {
     return !note.archived;
   });
 
-  if (!shown.length) {
+  const pageSize = Number(notePageSize.value);
+  const { items: pagedNotes, totalPages, safePage } = paginateItems(shown, notePage, pageSize);
+  notePage = safePage;
+  syncNotePaginationControls(notePage, totalPages);
+
+  if (!pagedNotes.length) {
     const emptyLabel =
       currentNoteView === 'archived'
         ? 'No archived voice notes.'
@@ -443,8 +498,7 @@ function renderNotes() {
     return;
   }
 
-  voiceNotesList.innerHTML = shown
-    .slice(0, 6)
+  voiceNotesList.innerHTML = pagedNotes
     .map((note) => {
       const noteAudio = note.audioDataUrl
         ? `<audio controls class="saved-note-audio"><source src="${note.audioDataUrl}" type="audio/webm"></audio>`
@@ -514,6 +568,29 @@ function syncChipSelection() {
   chips.forEach((chip) => {
     chip.classList.toggle('chip-selected', Number(chip.getAttribute('data-urgency')) === selectedUrgency);
   });
+}
+
+function paginateItems(items, page, pageSize) {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    items: items.slice(start, start + pageSize),
+    totalPages,
+    safePage,
+  };
+}
+
+function syncTaskPaginationControls(page, totalPages) {
+  taskPageInfo.textContent = `Page ${page} of ${totalPages}`;
+  taskPrevBtn.disabled = page <= 1;
+  taskNextBtn.disabled = page >= totalPages;
+}
+
+function syncNotePaginationControls(page, totalPages) {
+  notePageInfo.textContent = `Page ${page} of ${totalPages}`;
+  notePrevBtn.disabled = page <= 1;
+  noteNextBtn.disabled = page >= totalPages;
 }
 
 function syncTaskViewButtons() {
