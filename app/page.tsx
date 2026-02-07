@@ -61,7 +61,7 @@ export default function HomePage() {
 
   const [noteTitle, setNoteTitle] = useState('');
   const [noteInput, setNoteInput] = useState('');
-  const [noteType, setNoteType] = useState('Voice note');
+  const [noteType, setNoteType] = useState('Text note (no recording required)');
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesTab, setNotesTab] = useState<ItemStatus>('active');
   const [notesPage, setNotesPage] = useState(1);
@@ -191,7 +191,17 @@ export default function HomePage() {
     setNoteTitle('');
     setNoteInput('');
     setAudioUrl('');
-    setNoteType('Voice note');
+    setNoteType('Text note (no recording required)');
+  }
+
+  function createTaskFromNote(note: Note) {
+    const noteContext = note.content.trim() || 'No note text';
+    const source = `From ${note.noteType} captured ${new Date(note.createdAt).toLocaleString()}`;
+
+    setTaskTitle(note.title.trim() || 'Follow-up task');
+    setTaskDetails(`${noteContext}\n\n${source}`);
+    setTaskTab('active');
+    setTaskPage(1);
   }
 
   function updateTaskStatus(id: string, status: ItemStatus) {
@@ -278,8 +288,7 @@ export default function HomePage() {
             <label htmlFor="noteType">Note type</label>
             <select id="noteType" value={noteType} onChange={(e) => setNoteType(e.target.value)}>
               <option value="Voice note">Voice note</option>
-              <option value="Meeting recap">Meeting recap</option>
-              <option value="Reminder">Reminder</option>
+              <option value="Text note (no recording required)">Text note (no recording required)</option>
             </select>
 
             <div className="row stack-mobile">
@@ -323,6 +332,7 @@ export default function HomePage() {
                     <br />
                     <small>{note.content || 'No note text'} • {note.noteType}</small>
                     <div className="item-actions">
+                      {notesTab === 'active' && <button className="mini-btn mini-primary" onClick={() => createTaskFromNote(note)}>Create Task</button>}
                       {notesTab !== 'active' && <button className="mini-btn" onClick={() => updateNoteStatus(note.id, 'active')}>Activate</button>}
                       {notesTab !== 'archived' && <button className="mini-btn" onClick={() => updateNoteStatus(note.id, 'archived')}>Archive</button>}
                       {notesTab !== 'deleted' && <button className="mini-btn mini-danger" onClick={() => updateNoteStatus(note.id, 'deleted')}>Delete</button>}

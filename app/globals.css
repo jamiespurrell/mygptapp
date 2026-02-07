@@ -51,6 +51,7 @@ textarea { resize: vertical; min-height: 110px; }
 .mini-btn { border: 1px solid #365183; background: transparent; color: #d2e0fb; border-radius: 999px; padding: 0.2rem 0.65rem; font-weight: 700; cursor: pointer; }
 .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .mini-danger { border-color: #7e3a49; color: #ffd9df; }
+.mini-primary { border-color: #2d6ff1; color: #dce9ff; }
 .pagination-row { display: flex; justify-content: flex-end; align-items: center; gap: 0.55rem; margin-top: 0.8rem; color: #b7c5e6; }
 .right-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; }
 
