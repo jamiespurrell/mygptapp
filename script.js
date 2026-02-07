@@ -1,6 +1,7 @@
 const recordBtn = document.getElementById('recordBtn');
 const stopBtn = document.getElementById('stopBtn');
 const recordingStatus = document.getElementById('recordingStatus');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
 const audioPlayback = document.getElementById('audioPlayback');
 const noteTitle = document.getElementById('noteTitle');
 const noteInput = document.getElementById('noteInput');
@@ -45,6 +46,7 @@ const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
 const DELETE_RETENTION_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const THEME_STORAGE_KEY = 'planner-theme';
 
 let recorder;
 let chunks = [];
@@ -82,12 +84,20 @@ setRecordingButtons();
 syncChipSelection();
 syncTaskViewButtons();
 syncNoteViewButtons();
+initializeTheme();
 syncTaskPaginationControls(1, 1);
 syncNotePaginationControls(1, 1);
 
 document.addEventListener('click', (event) => {
   if (event.target.closest('.item-menu')) return;
   closeAllMenus();
+});
+
+themeToggleBtn.addEventListener('click', () => {
+  const current = document.body.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem(THEME_STORAGE_KEY, next);
 });
 
 noteMode.addEventListener('change', () => {
@@ -395,6 +405,17 @@ taskList.addEventListener('click', (event) => {
   persistAndRenderTasks();
   closeAllMenus();
 });
+
+function initializeTheme() {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  const initial = stored || 'dark';
+  applyTheme(initial);
+}
+
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  themeToggleBtn.textContent = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+}
 
 function setRecordingButtons() {
   const textMode = noteMode.value === 'text';

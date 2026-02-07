@@ -410,3 +410,69 @@ textarea { resize: vertical; min-height: 110px; }
   justify-content: flex-end;
   gap: 0.6rem;
 }
+
+.theme-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.6rem;
+}
+
+body[data-theme='light'] {
+  color-scheme: light;
+  background: radial-gradient(circle at top, #eef3ff 0%, #dfe8ff 60%);
+  color: #102a43;
+}
+
+body[data-theme='light'] .panel {
+  background: linear-gradient(180deg, #f7f9ff 0%, #eef3ff 100%);
+  border: 1px solid #c5d3ef;
+  box-shadow: 0 10px 25px rgba(42, 67, 101, 0.12);
+}
+
+body[data-theme='light'] .subtitle,
+body[data-theme='light'] .status,
+body[data-theme='light'] label,
+body[data-theme='light'] .note-stamp,
+body[data-theme='light'] .list-controls-row,
+body[data-theme='light'] .page-size-inline,
+body[data-theme='light'] .pagination-bottom {
+  color: #334e68;
+}
+
+body[data-theme='light'] input,
+body[data-theme='light'] textarea,
+body[data-theme='light'] select,
+body[data-theme='light'] audio,
+body[data-theme='light'] .date-range-picker {
+  background: #ffffff;
+  color: #102a43;
+  border-color: #bcccdc;
+}
+
+body[data-theme='light'] .empty-box,
+body[data-theme='light'] .task-list,
+body[data-theme='light'] .saved-note {
+  color: #243b53;
+  border-color: #bcccdc;
+  background: #fff;
+}
+
+body[data-theme='light'] .menu-trigger,
+body[data-theme='light'] .calendar-icon-btn {
+  background: #fff;
+  color: #243b53;
+  border-color: #9fb3d1;
+}
+
+body[data-theme='light'] .menu-panel {
+  background: #fff;
+  border-color: #bcccdc;
+}
+
+body[data-theme='light'] .menu-item {
+  color: #243b53;
+}
+
+body[data-theme='light'] .menu-item:hover {
+  background: #e8efff;
+}
