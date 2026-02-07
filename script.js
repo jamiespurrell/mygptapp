@@ -46,6 +46,8 @@ notes.forEach((note) => {
 });
 
 purgeExpiredDeletedTasks();
+purgeExpiredDeletedNotes();
+localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
 renderNotes();
 persistAndRenderTasks();
 setRecordingButtons();
@@ -175,7 +177,7 @@ voiceNotesList.addEventListener('click', (event) => {
   } else if (action === 'delete') {
     note.deletedAt = new Date().toISOString();
     note.archived = false;
-    recordingStatus.textContent = 'Voice note deleted.';
+    recordingStatus.textContent = `Voice note moved to Deleted (auto-removes in ${DELETE_RETENTION_DAYS} days).`;
     persistNotes();
     renderNotes();
   } else if (action === 'restore') {
@@ -290,6 +292,18 @@ function purgeExpiredDeletedTasks() {
   }
 }
 
+
+function purgeExpiredDeletedNotes() {
+  const now = Date.now();
+  for (let i = notes.length - 1; i >= 0; i -= 1) {
+    const deletedAt = notes[i].deletedAt;
+    if (!deletedAt) continue;
+    if (now - new Date(deletedAt).getTime() >= DELETE_RETENTION_DAYS * DAY_MS) {
+      notes.splice(i, 1);
+    }
+  }
+}
+
 function persistAndRenderTasks() {
   purgeExpiredDeletedTasks();
   tasks.forEach((task) => {
@@ -303,6 +317,7 @@ function persistAndRenderTasks() {
 }
 
 function persistNotes() {
+  purgeExpiredDeletedNotes();
   localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
   syncNoteViewButtons();
 }
@@ -404,6 +419,9 @@ function renderNotes() {
         : '';
 
       const stamped = `<p class="note-stamp">Captured: ${formatDateTime(note.createdAt)}</p>`;
+      const deleteNotice = note.deletedAt
+        ? `<p class="delete-notice">Permanently deleted in ${getDaysUntilPermanentDelete(note.deletedAt)} day(s).</p>`
+        : '';
 
       const actions = note.deletedAt
         ? `<button class="btn btn-secondary btn-small" data-note-action="restore" data-note-id="${note.id}">Restore</button>`
@@ -414,7 +432,7 @@ function renderNotes() {
              <button class="btn btn-muted btn-small" data-note-action="archive" data-note-id="${note.id}">Archive</button>
              <button class="btn btn-danger btn-small" data-note-action="delete" data-note-id="${note.id}">Delete</button>`;
 
-      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div>${stamped}<small>${note.content || 'No note text'}</small>${noteAudio}<div class="saved-note-actions">${actions}</div></article>`;
+      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div>${stamped}<small>${note.content || 'No note text'}</small>${noteAudio}${deleteNotice}<div class="saved-note-actions">${actions}</div></article>`;
     })
     .join('');
 }
