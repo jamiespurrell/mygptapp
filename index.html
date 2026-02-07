@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Daily Voice Notes & Task Planner</title>
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      window.CLERK_PUBLISHABLE_KEY = window.CLERK_PUBLISHABLE_KEY || '';
+    </script>
+    <script async crossorigin="anonymous" data-clerk-publishable-key="" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
   </head>
   <body>
     <main class="app">
@@ -16,7 +20,24 @@
         </p>
       </header>
 
-      <section class="layout">
+      <section id="authSection" class="panel auth-panel">
+        <h2>Sign in to continue</h2>
+        <p id="authMessage" class="status">Loading authentication…</p>
+
+        <div id="authButtons" class="row buttons-inline hidden">
+          <button id="openSignInBtn" class="btn btn-primary">Sign In</button>
+          <button id="openSignUpBtn" class="btn btn-muted">Sign Up</button>
+        </div>
+
+        <div id="userControls" class="row buttons-inline hidden">
+          <p id="welcomeUser" class="status"></p>
+          <button id="signOutBtn" class="btn btn-danger">Sign Out</button>
+        </div>
+
+        <div id="clerkContainer"></div>
+      </section>
+
+      <section id="appSection" class="layout hidden">
         <article class="panel">
           <h2>Voice Notes</h2>
 
