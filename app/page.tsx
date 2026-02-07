@@ -214,38 +214,21 @@ export default function HomePage() {
     const endDate = new Date(startDate);
     endDate.setHours(startDate.getHours() + 1);
 
-    const toIcsDate = (date: Date) =>
+    const toGoogleDate = (date: Date) =>
       date
         .toISOString()
         .replace(/[-:]/g, '')
         .replace(/\.\d{3}/, '');
 
-    const sanitize = (value: string) => value.replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: task.title || 'Task',
+      details: task.details || 'Task from Daily To-Do list',
+      dates: `${toGoogleDate(startDate)}/${toGoogleDate(endDate)}`,
+    });
 
-    const event = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Daily Voice Notes Planner//EN',
-      'BEGIN:VEVENT',
-      `UID:${crypto.randomUUID()}`,
-      `DTSTAMP:${toIcsDate(new Date())}Z`,
-      `DTSTART:${toIcsDate(startDate)}`,
-      `DTEND:${toIcsDate(endDate)}`,
-      `SUMMARY:${sanitize(task.title)}`,
-      `DESCRIPTION:${sanitize(task.details || 'Task from Daily To-Do list')}`,
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ].join('\r\n');
-
-    const blob = new Blob([event], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${task.title || 'task'}.ics`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?${params.toString()}`;
+    window.open(googleCalendarUrl, '_blank', 'noopener,noreferrer');
   }
 
   function updateTaskStatus(id: string, status: ItemStatus) {
