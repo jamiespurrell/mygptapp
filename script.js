@@ -23,6 +23,7 @@ const taskNextBtn = document.getElementById('taskNextBtn');
 const taskPageInfo = document.getElementById('taskPageInfo');
 const taskDateFrom = document.getElementById('taskDateFrom');
 const taskDateTo = document.getElementById('taskDateTo');
+const taskDateRangePicker = document.getElementById('taskDateRangePicker');
 
 const notePageSize = document.getElementById('notePageSize');
 const notePrevBtn = document.getElementById('notePrevBtn');
@@ -30,6 +31,7 @@ const noteNextBtn = document.getElementById('noteNextBtn');
 const notePageInfo = document.getElementById('notePageInfo');
 const noteDateFrom = document.getElementById('noteDateFrom');
 const noteDateTo = document.getElementById('noteDateTo');
+const noteDateRangePicker = document.getElementById('noteDateRangePicker');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -262,6 +264,20 @@ noteDateFrom.addEventListener('change', () => {
 noteDateTo.addEventListener('change', () => {
   notePage = 1;
   renderNotes();
+});
+
+noteDateRangePicker.addEventListener('click', (event) => {
+  const target = event.target;
+  if (target.tagName === 'INPUT') return;
+  if (typeof noteDateFrom.showPicker === 'function') noteDateFrom.showPicker();
+  else noteDateFrom.focus();
+});
+
+taskDateRangePicker.addEventListener('click', (event) => {
+  const target = event.target;
+  if (target.tagName === 'INPUT') return;
+  if (typeof taskDateFrom.showPicker === 'function') taskDateFrom.showPicker();
+  else taskDateFrom.focus();
 });
 
 taskDateFrom.addEventListener('change', () => {
