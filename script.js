@@ -21,11 +21,15 @@ const taskPageSize = document.getElementById('taskPageSize');
 const taskPrevBtn = document.getElementById('taskPrevBtn');
 const taskNextBtn = document.getElementById('taskNextBtn');
 const taskPageInfo = document.getElementById('taskPageInfo');
+const taskDateFrom = document.getElementById('taskDateFrom');
+const taskDateTo = document.getElementById('taskDateTo');
 
 const notePageSize = document.getElementById('notePageSize');
 const notePrevBtn = document.getElementById('notePrevBtn');
 const noteNextBtn = document.getElementById('noteNextBtn');
 const notePageInfo = document.getElementById('notePageInfo');
+const noteDateFrom = document.getElementById('noteDateFrom');
+const noteDateTo = document.getElementById('noteDateTo');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -48,6 +52,7 @@ const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
 tasks.forEach((task) => {
   if (typeof task.archived !== 'boolean') task.archived = false;
   if (!task.deletedAt) task.deletedAt = null;
+  if (!task.createdAt) task.createdAt = new Date().toISOString();
 });
 
 notes.forEach((note) => {
@@ -159,6 +164,7 @@ addTaskBtn.addEventListener('click', () => {
     linkedAudioUrl,
     archived: false,
     deletedAt: null,
+    createdAt: new Date().toISOString(),
     score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
   });
 
@@ -246,6 +252,26 @@ taskPageSize.addEventListener('change', () => {
 notePageSize.addEventListener('change', () => {
   notePage = 1;
   renderNotes();
+});
+
+noteDateFrom.addEventListener('change', () => {
+  notePage = 1;
+  renderNotes();
+});
+
+noteDateTo.addEventListener('change', () => {
+  notePage = 1;
+  renderNotes();
+});
+
+taskDateFrom.addEventListener('change', () => {
+  taskPage = 1;
+  renderTasks();
+});
+
+taskDateTo.addEventListener('change', () => {
+  taskPage = 1;
+  renderTasks();
 });
 
 taskPrevBtn.addEventListener('click', () => {
@@ -404,6 +430,9 @@ function renderTasks() {
   taskList.innerHTML = '';
 
   const shown = tasks.filter((task) => {
+    const taskDate = getComparableDate(task.createdAt || task.dueDate);
+    if (!isWithinSelectedRange(taskDate, taskDateFrom.value, taskDateTo.value)) return false;
+
     if (currentTaskView === 'deleted') return Boolean(task.deletedAt);
     if (task.deletedAt) return false;
     if (currentTaskView === 'archived') return task.archived;
@@ -476,6 +505,9 @@ function renderNotes() {
   voiceNotesList.innerHTML = '';
 
   const shown = notes.filter((note) => {
+    const noteDate = getComparableDate(note.createdAt);
+    if (!isWithinSelectedRange(noteDate, noteDateFrom.value, noteDateTo.value)) return false;
+
     if (currentNoteView === 'deleted') return Boolean(note.deletedAt);
     if (note.deletedAt) return false;
     if (currentNoteView === 'archived') return note.archived;
@@ -568,6 +600,24 @@ function syncChipSelection() {
   chips.forEach((chip) => {
     chip.classList.toggle('chip-selected', Number(chip.getAttribute('data-urgency')) === selectedUrgency);
   });
+}
+
+function getComparableDate(input) {
+  if (!input) return null;
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function isWithinSelectedRange(date, fromValue, toValue) {
+  if (!date) return false;
+
+  const from = fromValue ? new Date(`${fromValue}T00:00:00`) : null;
+  const to = toValue ? new Date(`${toValue}T23:59:59`) : null;
+
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
 }
 
 function paginateItems(items, page, pageSize) {

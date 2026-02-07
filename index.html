@@ -45,22 +45,27 @@
             <button type="button" class="btn btn-muted btn-small" data-note-view="deleted">Deleted</button>
           </div>
 
-          <div class="pagination-toolbar">
-            <label for="notePageSize">Show</label>
-            <select id="notePageSize" class="compact-select">
-              <option value="3">3</option>
-              <option value="5" selected>5</option>
-              <option value="10">10</option>
-            </select>
-            <span>per page</span>
+          <div class="list-controls-row">
+            <div class="date-range-controls">
+              <input id="noteDateFrom" type="date" />
+              <span>→</span>
+              <input id="noteDateTo" type="date" />
+            </div>
+            <div class="pagination-inline">
+              <label for="notePageSize">Show</label>
+              <select id="notePageSize" class="compact-select">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+              </select>
+              <span>per page</span>
+              <button type="button" class="btn btn-muted btn-small" id="notePrevBtn">Prev</button>
+              <span id="notePageInfo">Page 1 of 1</span>
+              <button type="button" class="btn btn-muted btn-small" id="noteNextBtn">Next</button>
+            </div>
           </div>
 
           <div id="voiceNotesList" class="empty-box">No voice notes yet. Start recording to capture one!</div>
-          <div class="pagination-controls" id="notePaginationControls">
-            <button type="button" class="btn btn-muted btn-small" id="notePrevBtn">Prev</button>
-            <span id="notePageInfo">Page 1 of 1</span>
-            <button type="button" class="btn btn-muted btn-small" id="noteNextBtn">Next</button>
-          </div>
         </article>
 
         <article class="panel">
@@ -96,22 +101,27 @@
             <button type="button" class="btn btn-muted btn-small" data-view="deleted">Deleted Tasks</button>
           </div>
 
-          <div class="pagination-toolbar">
-            <label for="taskPageSize">Show</label>
-            <select id="taskPageSize" class="compact-select">
-              <option value="3">3</option>
-              <option value="5" selected>5</option>
-              <option value="10">10</option>
-            </select>
-            <span>per page</span>
+          <div class="list-controls-row">
+            <div class="date-range-controls">
+              <input id="taskDateFrom" type="date" />
+              <span>→</span>
+              <input id="taskDateTo" type="date" />
+            </div>
+            <div class="pagination-inline">
+              <label for="taskPageSize">Show</label>
+              <select id="taskPageSize" class="compact-select">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+              </select>
+              <span>per page</span>
+              <button type="button" class="btn btn-muted btn-small" id="taskPrevBtn">Prev</button>
+              <span id="taskPageInfo">Page 1 of 1</span>
+              <button type="button" class="btn btn-muted btn-small" id="taskNextBtn">Next</button>
+            </div>
           </div>
 
           <ul id="taskList" class="task-list"></ul>
-          <div class="pagination-controls" id="taskPaginationControls">
-            <button type="button" class="btn btn-muted btn-small" id="taskPrevBtn">Prev</button>
-            <span id="taskPageInfo">Page 1 of 1</span>
-            <button type="button" class="btn btn-muted btn-small" id="taskNextBtn">Next</button>
-          </div>
         </article>
       </section>
     </main>
