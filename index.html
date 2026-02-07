@@ -34,6 +34,12 @@
           <label for="noteInput">Notes</label>
           <textarea id="noteInput" rows="4" placeholder="Context or follow up"></textarea>
 
+          <label for="noteMode">Note type</label>
+          <select id="noteMode">
+            <option value="voice" selected>Voice note</option>
+            <option value="text">Text note (no recording required)</option>
+          </select>
+
           <div class="row stack-mobile">
             <button id="saveNoteBtn" class="btn btn-primary btn-wide">Save Voice Note</button>
             <button id="discardNoteBtn" class="btn btn-muted btn-wide">Discard</button>
@@ -89,13 +95,13 @@
           <label for="taskDue">Due date (optional)</label>
           <input id="taskDue" type="date" />
 
-          <button id="addTaskBtn" class="btn btn-primary btn-wide">Add Task</button>
-
           <div class="chips" id="priorityChips" aria-label="Choose priority label">
             <button type="button" class="chip high" data-urgency="3">HIGH</button>
             <button type="button" class="chip medium" data-urgency="2">MEDIUM</button>
             <button type="button" class="chip low" data-urgency="1">LOW</button>
           </div>
+
+          <button id="addTaskBtn" class="btn btn-primary btn-wide">Add Task</button>
 
           <div class="task-views" id="taskViewControls">
             <button type="button" class="btn btn-muted btn-small view-active" data-view="active">Active Tasks</button>

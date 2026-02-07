@@ -4,6 +4,7 @@ const recordingStatus = document.getElementById('recordingStatus');
 const audioPlayback = document.getElementById('audioPlayback');
 const noteTitle = document.getElementById('noteTitle');
 const noteInput = document.getElementById('noteInput');
+const noteMode = document.getElementById('noteMode');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
 const discardNoteBtn = document.getElementById('discardNoteBtn');
 const voiceNotesList = document.getElementById('voiceNotesList');
@@ -69,6 +70,7 @@ notes.forEach((note) => {
   if (typeof note.archived !== 'boolean') note.archived = false;
   if (!note.deletedAt) note.deletedAt = null;
   if (typeof note.taskCreated !== 'boolean') note.taskCreated = false;
+  if (!note.noteType) note.noteType = note.audioDataUrl ? 'voice' : 'text';
 });
 
 purgeExpiredDeletedTasks();
@@ -86,6 +88,18 @@ syncNotePaginationControls(1, 1);
 document.addEventListener('click', (event) => {
   if (event.target.closest('.item-menu')) return;
   closeAllMenus();
+});
+
+noteMode.addEventListener('change', () => {
+  const textMode = noteMode.value === 'text';
+  recordBtn.disabled = textMode || isRecording;
+  stopBtn.disabled = textMode || !isRecording;
+  if (textMode) {
+    recordingStatus.textContent = 'Text note mode selected. Recording is optional/off.';
+  } else {
+    setRecordingButtons();
+    recordingStatus.textContent = 'Voice note mode selected.';
+  }
 });
 
 recordBtn.addEventListener('click', async () => {
@@ -123,11 +137,14 @@ stopBtn.addEventListener('click', () => {
 saveNoteBtn.addEventListener('click', () => {
   if (!noteTitle.value.trim() && !noteInput.value.trim()) return;
 
+  const selectedNoteType = noteMode.value;
+
   notes.unshift({
     id: crypto.randomUUID(),
     title: noteTitle.value.trim() || 'Untitled Note',
     content: noteInput.value.trim(),
-    audioDataUrl: latestRecordingDataUrl,
+    audioDataUrl: selectedNoteType === 'text' ? '' : latestRecordingDataUrl,
+    noteType: selectedNoteType,
     createdAt: new Date().toISOString(),
     archived: false,
     deletedAt: null,
@@ -370,6 +387,9 @@ taskList.addEventListener('click', (event) => {
     task.deletedAt = new Date().toISOString();
     task.archived = false;
     recordingStatus.textContent = `Task moved to Deleted (auto-removes in ${DELETE_RETENTION_DAYS} days).`;
+  } else if (action === 'add-calendar') {
+    addTaskToExternalCalendar(task);
+    recordingStatus.textContent = 'Opened calendar event draft for this task.';
   }
 
   persistAndRenderTasks();
@@ -377,8 +397,9 @@ taskList.addEventListener('click', (event) => {
 });
 
 function setRecordingButtons() {
-  recordBtn.disabled = isRecording;
-  stopBtn.disabled = !isRecording;
+  const textMode = noteMode.value === 'text';
+  recordBtn.disabled = textMode || isRecording;
+  stopBtn.disabled = textMode || !isRecording;
 }
 
 function clearNoteForm() {
@@ -511,10 +532,12 @@ function renderTasks() {
       : task.archived
         ? [
             `<button type="button" class="menu-item" data-task-action="restore" data-task-id="${task.id}">Restore</button>`,
+            `<button type="button" class="menu-item" data-task-action="add-calendar" data-task-id="${task.id}">Add to Calendar</button>`,
             `<button type="button" class="menu-item danger" data-task-action="delete" data-task-id="${task.id}">Delete</button>`,
           ]
         : [
             `<button type="button" class="menu-item" data-task-action="archive" data-task-id="${task.id}">Archive</button>`,
+            `<button type="button" class="menu-item" data-task-action="add-calendar" data-task-id="${task.id}">Add to Calendar</button>`,
             `<button type="button" class="menu-item danger" data-task-action="delete" data-task-id="${task.id}">Delete</button>`,
           ];
 
@@ -619,6 +642,17 @@ function toggleMenu(menuId) {
 
 function closeAllMenus() {
   document.querySelectorAll('.item-menu.menu-open').forEach((menu) => menu.classList.remove('menu-open'));
+}
+
+
+function addTaskToExternalCalendar(task) {
+  const startDate = task.dueDate || new Date().toISOString().slice(0, 10);
+  const endDate = startDate;
+  const dates = `${startDate.replace(/-/g, '')}/${endDate.replace(/-/g, '')}`;
+  const details = encodeURIComponent((task.details || 'Task from Daily Planner').replace(/<br>/g, '\n'));
+  const title = encodeURIComponent(task.title || 'Task');
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function formatDateTime(isoString) {
