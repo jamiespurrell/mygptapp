@@ -7,6 +7,7 @@ const noteInput = document.getElementById('noteInput');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
 const discardNoteBtn = document.getElementById('discardNoteBtn');
 const voiceNotesList = document.getElementById('voiceNotesList');
+const noteViewControls = document.getElementById('noteViewControls');
 
 const taskTitle = document.getElementById('taskTitle');
 const taskDetails = document.getElementById('taskDetails');
@@ -28,6 +29,7 @@ let isRecording = false;
 let latestRecordingDataUrl = '';
 let selectedNoteForTask = null;
 let currentTaskView = 'active';
+let currentNoteView = 'active';
 
 const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
 const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
@@ -37,12 +39,19 @@ tasks.forEach((task) => {
   if (!task.deletedAt) task.deletedAt = null;
 });
 
+notes.forEach((note) => {
+  if (typeof note.archived !== 'boolean') note.archived = false;
+  if (!note.deletedAt) note.deletedAt = null;
+  if (typeof note.taskCreated !== 'boolean') note.taskCreated = false;
+});
+
 purgeExpiredDeletedTasks();
 renderNotes();
 persistAndRenderTasks();
 setRecordingButtons();
 syncChipSelection();
 syncTaskViewButtons();
+syncNoteViewButtons();
 
 recordBtn.addEventListener('click', async () => {
   if (isRecording) return;
@@ -85,9 +94,12 @@ saveNoteBtn.addEventListener('click', () => {
     content: noteInput.value.trim(),
     audioDataUrl: latestRecordingDataUrl,
     createdAt: new Date().toISOString(),
+    archived: false,
+    deletedAt: null,
+    taskCreated: false,
   });
 
-  localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
+  persistNotes();
   clearNoteForm();
   renderNotes();
   recordingStatus.textContent = 'Voice note saved.';
@@ -101,14 +113,30 @@ discardNoteBtn.addEventListener('click', () => {
 addTaskBtn.addEventListener('click', () => {
   if (!taskTitle.value.trim()) return;
 
+  let details = taskDetails.value.trim();
+  let linkedNoteId = null;
+  let linkedAudioUrl = '';
+
+  if (selectedNoteForTask) {
+    linkedNoteId = selectedNoteForTask.id;
+    linkedAudioUrl = selectedNoteForTask.audioDataUrl || '';
+    const linkedStamp = formatDateTime(selectedNoteForTask.createdAt);
+    const linkedText = `Linked voice note captured ${linkedStamp}. Listen in the Voice Notes section.`;
+    details = details ? `${details}\n\n${linkedText}` : linkedText;
+
+    selectedNoteForTask.taskCreated = true;
+    persistNotes();
+    renderNotes();
+  }
+
   tasks.push({
     id: crypto.randomUUID(),
     title: taskTitle.value.trim(),
-    details: taskDetails.value.trim(),
+    details,
     dueDate: taskDue.value,
     urgency: Number(taskUrgency.value),
-    linkedNoteId: selectedNoteForTask?.id || null,
-    linkedAudioUrl: selectedNoteForTask?.audioDataUrl || '',
+    linkedNoteId,
+    linkedAudioUrl,
     archived: false,
     deletedAt: null,
     score: computePriorityScore(taskDue.value, Number(taskUrgency.value)),
@@ -124,18 +152,49 @@ addTaskBtn.addEventListener('click', () => {
 });
 
 voiceNotesList.addEventListener('click', (event) => {
-  const createTaskButton = event.target.closest('[data-action="create-task"]');
-  if (!createTaskButton) return;
+  const noteActionButton = event.target.closest('[data-note-action]');
+  if (!noteActionButton) return;
 
-  const noteId = createTaskButton.getAttribute('data-note-id');
-  const selectedNote = notes.find((note) => note.id === noteId);
-  if (!selectedNote) return;
+  const noteId = noteActionButton.getAttribute('data-note-id');
+  const action = noteActionButton.getAttribute('data-note-action');
+  const note = notes.find((n) => n.id === noteId);
+  if (!note) return;
 
-  selectedNoteForTask = selectedNote;
-  taskTitle.value = selectedNote.title;
-  taskDetails.value = selectedNote.content;
-  taskTitle.focus();
-  recordingStatus.textContent = 'Task fields populated from selected voice note.';
+  if (action === 'create-task') {
+    if (note.taskCreated) return;
+    selectedNoteForTask = note;
+    taskTitle.value = note.title;
+    taskDetails.value = note.content;
+    taskTitle.focus();
+    recordingStatus.textContent = 'Task fields populated from selected voice note.';
+  } else if (action === 'archive') {
+    note.archived = true;
+    recordingStatus.textContent = 'Voice note archived.';
+    persistNotes();
+    renderNotes();
+  } else if (action === 'delete') {
+    note.deletedAt = new Date().toISOString();
+    note.archived = false;
+    recordingStatus.textContent = 'Voice note deleted.';
+    persistNotes();
+    renderNotes();
+  } else if (action === 'restore') {
+    note.archived = false;
+    note.deletedAt = null;
+    currentNoteView = 'active';
+    recordingStatus.textContent = 'Voice note restored.';
+    persistNotes();
+    renderNotes();
+  }
+});
+
+noteViewControls.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-note-view]');
+  if (!button) return;
+
+  currentNoteView = button.getAttribute('data-note-view');
+  syncNoteViewButtons();
+  renderNotes();
 });
 
 priorityChips.addEventListener('click', (event) => {
@@ -225,9 +284,7 @@ function purgeExpiredDeletedTasks() {
   for (let i = tasks.length - 1; i >= 0; i -= 1) {
     const deletedAt = tasks[i].deletedAt;
     if (!deletedAt) continue;
-
-    const ageMs = now - new Date(deletedAt).getTime();
-    if (ageMs >= DELETE_RETENTION_DAYS * DAY_MS) {
+    if (now - new Date(deletedAt).getTime() >= DELETE_RETENTION_DAYS * DAY_MS) {
       tasks.splice(i, 1);
     }
   }
@@ -235,7 +292,6 @@ function purgeExpiredDeletedTasks() {
 
 function persistAndRenderTasks() {
   purgeExpiredDeletedTasks();
-
   tasks.forEach((task) => {
     task.score = computePriorityScore(task.dueDate, task.urgency);
   });
@@ -244,6 +300,11 @@ function persistAndRenderTasks() {
   localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(tasks));
   renderTasks();
   syncTaskViewButtons();
+}
+
+function persistNotes() {
+  localStorage.setItem(NOTE_STORAGE_KEY, JSON.stringify(notes));
+  syncNoteViewButtons();
 }
 
 function getPriorityMeta(urgency) {
@@ -302,7 +363,7 @@ function renderTasks() {
     li.innerHTML = `
       <div>
         <strong>${task.title}</strong><br>
-        <small>${task.details || 'No details'} • Due: ${task.dueDate || 'No date'}</small>
+        <small>${(task.details || 'No details').replace(/\n/g, '<br>')} • Due: ${task.dueDate || 'No date'}</small>
         ${linkedAudio}
         ${deleteNotice}
         <div class="task-actions">${actions}</div>
@@ -315,20 +376,58 @@ function renderTasks() {
 }
 
 function renderNotes() {
-  if (!notes.length) {
-    voiceNotesList.textContent = 'No voice notes yet. Start recording to capture one!';
+  voiceNotesList.innerHTML = '';
+
+  const shown = notes.filter((note) => {
+    if (currentNoteView === 'deleted') return Boolean(note.deletedAt);
+    if (note.deletedAt) return false;
+    if (currentNoteView === 'archived') return note.archived;
+    return !note.archived;
+  });
+
+  if (!shown.length) {
+    const emptyLabel =
+      currentNoteView === 'archived'
+        ? 'No archived voice notes.'
+        : currentNoteView === 'deleted'
+          ? 'No deleted voice notes.'
+          : 'No voice notes yet. Start recording to capture one!';
+    voiceNotesList.textContent = emptyLabel;
     return;
   }
 
-  voiceNotesList.innerHTML = notes
-    .slice(0, 4)
+  voiceNotesList.innerHTML = shown
+    .slice(0, 6)
     .map((note) => {
       const noteAudio = note.audioDataUrl
         ? `<audio controls class="saved-note-audio"><source src="${note.audioDataUrl}" type="audio/webm"></audio>`
         : '';
-      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div><small>${note.content || 'No note text'}</small>${noteAudio}<div class="saved-note-actions"><button class="btn btn-secondary" data-action="create-task" data-note-id="${note.id}">Create Task</button></div></article>`;
+
+      const stamped = `<p class="note-stamp">Captured: ${formatDateTime(note.createdAt)}</p>`;
+
+      const actions = note.deletedAt
+        ? `<button class="btn btn-secondary btn-small" data-note-action="restore" data-note-id="${note.id}">Restore</button>`
+        : note.archived
+          ? `<button class="btn btn-secondary btn-small" data-note-action="restore" data-note-id="${note.id}">Restore</button>
+             <button class="btn btn-danger btn-small" data-note-action="delete" data-note-id="${note.id}">Delete</button>`
+          : `<button class="btn btn-secondary btn-small" data-note-action="create-task" data-note-id="${note.id}" ${note.taskCreated ? 'disabled' : ''}>${note.taskCreated ? 'Task Created' : 'Create Task'}</button>
+             <button class="btn btn-muted btn-small" data-note-action="archive" data-note-id="${note.id}">Archive</button>
+             <button class="btn btn-danger btn-small" data-note-action="delete" data-note-id="${note.id}">Delete</button>`;
+
+      return `<article class="saved-note"><div class="saved-note-head"><strong>${note.title}</strong></div>${stamped}<small>${note.content || 'No note text'}</small>${noteAudio}<div class="saved-note-actions">${actions}</div></article>`;
     })
     .join('');
+}
+
+function formatDateTime(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString([], {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function syncChipSelection() {
@@ -350,5 +449,19 @@ function syncTaskViewButtons() {
     if (view === 'active') btn.textContent = `Active Tasks (${activeCount})`;
     if (view === 'archived') btn.textContent = `Archived Tasks (${archivedCount})`;
     if (view === 'deleted') btn.textContent = `Deleted Tasks (${deletedCount})`;
+  });
+}
+
+function syncNoteViewButtons() {
+  const deletedCount = notes.filter((note) => note.deletedAt).length;
+  const archivedCount = notes.filter((note) => !note.deletedAt && note.archived).length;
+  const activeCount = notes.filter((note) => !note.deletedAt && !note.archived).length;
+
+  noteViewControls.querySelectorAll('[data-note-view]').forEach((btn) => {
+    const view = btn.getAttribute('data-note-view');
+    btn.classList.toggle('view-active', view === currentNoteView);
+    if (view === 'active') btn.textContent = `Voice Notes (${activeCount})`;
+    if (view === 'archived') btn.textContent = `Archived (${archivedCount})`;
+    if (view === 'deleted') btn.textContent = `Deleted (${deletedCount})`;
   });
 }

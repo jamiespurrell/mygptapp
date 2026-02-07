@@ -185,7 +185,7 @@ textarea { resize: vertical; min-height: 110px; }
   margin-bottom: 0.6rem;
 }
 .saved-note-head { margin-bottom: 0.3rem; }
-.saved-note-actions { margin-top: 0.7rem; display: flex; justify-content: flex-end; }
+.saved-note-actions { margin-top: 0.7rem; display: flex; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; }
 .saved-note-actions .btn { padding: 0.45rem 0.9rem; }
 .saved-note-audio,
 .task-audio {
@@ -219,5 +219,12 @@ textarea { resize: vertical; min-height: 110px; }
   margin: 0.55rem 0 0;
   color: #ffcf9d;
   font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.note-stamp {
+  margin: 0.2rem 0 0.45rem;
+  color: #9fb5dc;
+  font-size: 0.82rem;
   font-weight: 600;
 }
