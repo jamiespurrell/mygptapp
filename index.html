@@ -50,7 +50,7 @@
               <input id="noteDateFrom" type="date" />
               <span class="range-arrow">→</span>
               <input id="noteDateTo" type="date" />
-              <span class="calendar-icon">📅</span>
+              <button type="button" class="calendar-icon-btn" data-range-target="note" aria-label="Open note date range picker">📅</button>
             </div>
             <div class="page-size-inline">
               <label for="notePageSize">Show</label>
@@ -108,7 +108,7 @@
               <input id="taskDateFrom" type="date" />
               <span class="range-arrow">→</span>
               <input id="taskDateTo" type="date" />
-              <span class="calendar-icon">📅</span>
+              <button type="button" class="calendar-icon-btn" data-range-target="task" aria-label="Open task date range picker">📅</button>
             </div>
             <div class="page-size-inline">
               <label for="taskPageSize">Show</label>
@@ -129,6 +129,28 @@
         </article>
       </section>
     </main>
+
+
+
+    <dialog id="dateRangeDialog" class="range-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <h3>Select date range</h3>
+        <div class="range-dialog-inputs">
+          <label>
+            From
+            <input id="dialogDateFrom" type="date" />
+          </label>
+          <label>
+            To
+            <input id="dialogDateTo" type="date" />
+          </label>
+        </div>
+        <div class="range-dialog-actions">
+          <button value="cancel" class="btn btn-muted btn-small">Cancel</button>
+          <button type="button" id="applyDateRangeBtn" class="btn btn-primary btn-small">Confirm</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="script.js"></script>
   </body>

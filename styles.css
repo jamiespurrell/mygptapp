@@ -337,8 +337,7 @@ textarea { resize: vertical; min-height: 110px; }
   outline: none;
 }
 
-.range-arrow,
-.calendar-icon {
+.range-arrow {
   color: #b7c5e6;
   font-weight: 700;
 }
@@ -360,4 +359,54 @@ textarea { resize: vertical; min-height: 110px; }
   gap: 0.55rem;
   color: #c9d8f5;
   font-size: 0.88rem;
+}
+
+
+.calendar-icon-btn {
+  border: 1px solid #36527f;
+  background: #0b1b3d;
+  color: #d8e5ff;
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+}
+
+.range-dialog {
+  border: 1px solid #2c4470;
+  border-radius: 14px;
+  background: #08162f;
+  color: #e8f0ff;
+  min-width: 460px;
+}
+
+.range-dialog::backdrop {
+  background: rgba(1, 7, 20, 0.55);
+}
+
+.range-dialog-body {
+  margin: 0;
+  padding: 1rem;
+}
+
+.range-dialog-body h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.2rem;
+}
+
+.range-dialog-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.range-dialog-inputs label {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.range-dialog-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }

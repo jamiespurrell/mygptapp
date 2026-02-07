@@ -24,6 +24,12 @@ const taskPageInfo = document.getElementById('taskPageInfo');
 const taskDateFrom = document.getElementById('taskDateFrom');
 const taskDateTo = document.getElementById('taskDateTo');
 const taskDateRangePicker = document.getElementById('taskDateRangePicker');
+const taskCalendarBtn = taskDateRangePicker.querySelector('[data-range-target="task"]');
+
+const dateRangeDialog = document.getElementById('dateRangeDialog');
+const dialogDateFrom = document.getElementById('dialogDateFrom');
+const dialogDateTo = document.getElementById('dialogDateTo');
+const applyDateRangeBtn = document.getElementById('applyDateRangeBtn');
 
 const notePageSize = document.getElementById('notePageSize');
 const notePrevBtn = document.getElementById('notePrevBtn');
@@ -32,6 +38,7 @@ const notePageInfo = document.getElementById('notePageInfo');
 const noteDateFrom = document.getElementById('noteDateFrom');
 const noteDateTo = document.getElementById('noteDateTo');
 const noteDateRangePicker = document.getElementById('noteDateRangePicker');
+const noteCalendarBtn = noteDateRangePicker.querySelector('[data-range-target="note"]');
 
 const TASK_STORAGE_KEY = 'voice-notes-priority-tasks';
 const NOTE_STORAGE_KEY = 'voice-note-items';
@@ -47,6 +54,7 @@ let currentTaskView = 'active';
 let currentNoteView = 'active';
 let taskPage = 1;
 let notePage = 1;
+let activeRangeTarget = null;
 
 const tasks = JSON.parse(localStorage.getItem(TASK_STORAGE_KEY) || '[]');
 const notes = JSON.parse(localStorage.getItem(NOTE_STORAGE_KEY) || '[]');
@@ -266,20 +274,6 @@ noteDateTo.addEventListener('change', () => {
   renderNotes();
 });
 
-noteDateRangePicker.addEventListener('click', (event) => {
-  const target = event.target;
-  if (target.tagName === 'INPUT') return;
-  if (typeof noteDateFrom.showPicker === 'function') noteDateFrom.showPicker();
-  else noteDateFrom.focus();
-});
-
-taskDateRangePicker.addEventListener('click', (event) => {
-  const target = event.target;
-  if (target.tagName === 'INPUT') return;
-  if (typeof taskDateFrom.showPicker === 'function') taskDateFrom.showPicker();
-  else taskDateFrom.focus();
-});
-
 taskDateFrom.addEventListener('change', () => {
   taskPage = 1;
   renderTasks();
@@ -288,6 +282,34 @@ taskDateFrom.addEventListener('change', () => {
 taskDateTo.addEventListener('change', () => {
   taskPage = 1;
   renderTasks();
+});
+
+noteCalendarBtn.addEventListener('click', () => {
+  openRangeDialog('note');
+});
+
+taskCalendarBtn.addEventListener('click', () => {
+  openRangeDialog('task');
+});
+
+applyDateRangeBtn.addEventListener('click', () => {
+  if (!activeRangeTarget) return;
+
+  if (activeRangeTarget === 'note') {
+    noteDateFrom.value = dialogDateFrom.value;
+    noteDateTo.value = dialogDateTo.value;
+    notePage = 1;
+    renderNotes();
+  }
+
+  if (activeRangeTarget === 'task') {
+    taskDateFrom.value = dialogDateFrom.value;
+    taskDateTo.value = dialogDateTo.value;
+    taskPage = 1;
+    renderTasks();
+  }
+
+  dateRangeDialog.close();
 });
 
 taskPrevBtn.addEventListener('click', () => {
@@ -616,6 +638,22 @@ function syncChipSelection() {
   chips.forEach((chip) => {
     chip.classList.toggle('chip-selected', Number(chip.getAttribute('data-urgency')) === selectedUrgency);
   });
+}
+
+function openRangeDialog(target) {
+  activeRangeTarget = target;
+
+  if (target === 'note') {
+    dialogDateFrom.value = noteDateFrom.value;
+    dialogDateTo.value = noteDateTo.value;
+  }
+
+  if (target === 'task') {
+    dialogDateFrom.value = taskDateFrom.value;
+    dialogDateTo.value = taskDateTo.value;
+  }
+
+  if (typeof dateRangeDialog.showModal === 'function') dateRangeDialog.showModal();
 }
 
 function getComparableDate(input) {
