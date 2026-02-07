@@ -404,15 +404,17 @@ function renderTasks() {
     const taskMenu = buildActionMenu(`task-${task.id}`, menuItems.join(''));
 
     li.innerHTML = `
-      <div>
-        <strong>${task.title}</strong><br>
+      <div class="task-main">
+        <div class="task-head-row">
+          <strong>${task.title}</strong>
+          ${taskMenu}
+        </div>
+        <div class="task-priority-row">
+          <span class="priority-pill priority-${priority.className}">${priority.label}</span>
+        </div>
         <small>${(task.details || 'No details').replace(/\n/g, '<br>')} • Due: ${task.dueDate || 'No date'}</small>
         ${linkedAudio}
         ${deleteNotice}
-      </div>
-      <div class="item-right-rail">
-        <span class="priority-pill priority-${priority.className}">${priority.label}</span>
-        ${taskMenu}
       </div>
     `;
 
