@@ -1,35 +1,46 @@
-# Daily Voice Notes & Task Planner
+# Daily Voice Notes & Task Planner (Next.js + Clerk)
 
-A simple dark-themed web app to:
+This app now uses **Next.js App Router** and **Clerk** authentication.
 
-- record and save quick voice notes,
-- create daily tasks with details, due date, and priority,
-- auto-rank tasks by urgency + due-date proximity,
-- authenticate users with Clerk sign in/sign up,
-- keep each signed-in user's data in browser `localStorage`.
+## Local setup
 
-## Run locally
+1. Install dependencies:
 
 ```bash
-python3 -m http.server 8000
+npm install
 ```
 
-Open `http://localhost:8000`.
+2. Create `.env.local` in the project root:
 
-## Configure Clerk
-
-1. Create an app in Clerk and copy your **Publishable Key**.
-2. Open `index.html` and set:
-
-```html
-<script>
-  window.CLERK_PUBLISHABLE_KEY = 'pk_test_xxx';
-</script>
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+CLERK_SECRET_KEY=YOUR_SECRET_KEY
 ```
 
-3. Refresh the app. Users can then sign in or sign up from the auth panel.
+> Use real values from Clerk Dashboard → API Keys. Do not commit `.env.local`.
 
-## Browser APIs used
+3. Run locally:
 
-- `MediaRecorder` for voice capture
-- `getUserMedia` for microphone access
+```bash
+npm run dev
+```
+
+4. Open `http://localhost:3000`.
+
+## Clerk integration points
+
+- `proxy.ts` uses `clerkMiddleware()`
+- `app/layout.tsx` wraps the app in `<ClerkProvider>` and renders `<SignInButton>`, `<SignUpButton>`, and `<UserButton>`
+- `app/page.tsx` shows app content only for signed-in users via `<SignedIn>` / `<SignedOut>`
+
+## Troubleshooting
+
+If you still see **"Unable to load Clerk. Check your internet connection and refresh."**, you are likely opening the old static page instead of the Next.js app.
+
+Use:
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:3000` (not `index.html` or `python3 -m http.server`).

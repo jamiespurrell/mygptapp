@@ -3,98 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Daily Voice Notes & Task Planner</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script>
-      window.CLERK_PUBLISHABLE_KEY = window.CLERK_PUBLISHABLE_KEY || '';
-    </script>
-    <script async crossorigin="anonymous" data-clerk-publishable-key="" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+    <title>Use Next.js Dev Server</title>
+    <style>
+      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #050b1d; color: #f3f7ff; }
+      .card { max-width: 760px; margin: 0 auto; border: 1px solid #1c315d; border-radius: 16px; padding: 1.2rem; background: #0b142c; }
+      code { background: #071227; padding: 0.2rem 0.4rem; border-radius: 6px; }
+      a { color: #7eb2ff; }
+    </style>
   </head>
   <body>
-    <main class="app">
-      <header class="hero">
-        <h1>Daily Voice Notes &amp; Task Planner</h1>
-        <p>
-          Capture quick voice memos and organize your daily tasks by priority so you can focus on
-          what matters most.
-        </p>
-      </header>
-
-      <section id="authSection" class="panel auth-panel">
-        <h2>Sign in to continue</h2>
-        <p id="authMessage" class="status">Loading authentication…</p>
-
-        <div id="authButtons" class="row buttons-inline hidden">
-          <button id="openSignInBtn" class="btn btn-primary">Sign In</button>
-          <button id="openSignUpBtn" class="btn btn-muted">Sign Up</button>
-        </div>
-
-        <div id="userControls" class="row buttons-inline hidden">
-          <p id="welcomeUser" class="status"></p>
-          <button id="signOutBtn" class="btn btn-danger">Sign Out</button>
-        </div>
-
-        <div id="clerkContainer"></div>
-      </section>
-
-      <section id="appSection" class="layout hidden">
-        <article class="panel">
-          <h2>Voice Notes</h2>
-
-          <div class="row buttons-inline">
-            <button id="recordBtn" class="btn btn-primary">Start Recording</button>
-            <button id="stopBtn" class="btn btn-danger">Stop Recording</button>
-          </div>
-
-          <p id="recordingStatus" class="status">Ready to record.</p>
-          <audio id="audioPlayback" controls></audio>
-
-          <label for="noteTitle">Title</label>
-          <input id="noteTitle" type="text" placeholder="Morning planning" />
-
-          <label for="noteInput">Notes</label>
-          <textarea id="noteInput" rows="4" placeholder="Context or follow up"></textarea>
-
-          <div class="row stack-mobile">
-            <button id="saveNoteBtn" class="btn btn-primary btn-wide">Save Voice Note</button>
-            <button id="discardNoteBtn" class="btn btn-muted btn-wide">Discard</button>
-          </div>
-
-          <div id="voiceNotesList" class="empty-box">No voice notes yet. Start recording to capture one!</div>
-        </article>
-
-        <article class="panel">
-          <h2>Daily To-Do List</h2>
-
-          <label for="taskTitle">Task</label>
-          <input id="taskTitle" type="text" placeholder="Plan weekly meals" />
-
-          <label for="taskDetails">Details (optional)</label>
-          <textarea id="taskDetails" rows="4" placeholder="Add helpful notes"></textarea>
-
-          <label for="taskUrgency">Priority</label>
-          <select id="taskUrgency">
-            <option value="3">High</option>
-            <option value="2" selected>Medium</option>
-            <option value="1">Low</option>
-          </select>
-
-          <label for="taskDue">Due date (optional)</label>
-          <input id="taskDue" type="date" />
-
-          <button id="addTaskBtn" class="btn btn-primary btn-wide">Add Task</button>
-
-          <div class="chips">
-            <span class="chip high">HIGH</span>
-            <span class="chip medium">MEDIUM</span>
-            <span class="chip low">LOW</span>
-          </div>
-
-          <ul id="taskList" class="task-list"></ul>
-        </article>
-      </section>
-    </main>
-
-    <script src="script.js"></script>
+    <div class="card">
+      <h1>This project now runs with Next.js + Clerk</h1>
+      <p>
+        You're viewing the legacy static entry file. To run authentication correctly, start the
+        Next.js app and open <code>http://localhost:3000</code>.
+      </p>
+      <ol>
+        <li>Create <code>.env.local</code> with Clerk keys.</li>
+        <li>Run <code>npm install</code>.</li>
+        <li>Run <code>npm run dev</code>.</li>
+      </ol>
+      <p>See setup instructions in <code>README.md</code>.</p>
+    </div>
   </body>
 </html>
