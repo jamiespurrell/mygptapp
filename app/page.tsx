@@ -59,6 +59,9 @@ export default function HomePage() {
   const [taskFromDate, setTaskFromDate] = useState('');
   const [taskToDate, setTaskToDate] = useState('');
   const [taskMenuOpenId, setTaskMenuOpenId] = useState<string | null>(null);
+  const [taskDateDialogOpen, setTaskDateDialogOpen] = useState(false);
+  const [taskDateDraftFrom, setTaskDateDraftFrom] = useState('');
+  const [taskDateDraftTo, setTaskDateDraftTo] = useState('');
 
   const [noteTitle, setNoteTitle] = useState('');
   const [noteInput, setNoteInput] = useState('');
@@ -107,6 +110,22 @@ export default function HomePage() {
   useEffect(() => setNotesPage(1), [notesTab, notesPageSize, noteFromDate, noteToDate]);
   useEffect(() => setTaskPage(1), [taskTab, taskPageSize, taskFromDate, taskToDate]);
   useEffect(() => setTaskMenuOpenId(null), [taskTab, taskPage, taskFromDate, taskToDate]);
+
+  function openTaskDateDialog() {
+    setTaskDateDraftFrom(taskFromDate);
+    setTaskDateDraftTo(taskToDate);
+    setTaskDateDialogOpen(true);
+  }
+
+  function confirmTaskDateDialog() {
+    setTaskFromDate(taskDateDraftFrom);
+    setTaskToDate(taskDateDraftTo);
+    setTaskDateDialogOpen(false);
+  }
+
+  function cancelTaskDateDialog() {
+    setTaskDateDialogOpen(false);
+  }
 
   function computePriorityScore(dueDate: string, urgency: number) {
     let score = urgency * 30;
@@ -405,10 +424,15 @@ export default function HomePage() {
               <button className={`tab-btn ${taskTab === 'deleted' ? 'active' : ''}`} onClick={() => setTaskTab('deleted')}>Deleted Tasks ({taskCounts.deleted})</button>
             </div>
 
-            <div className="filter-row">
-              <input type="date" value={taskFromDate} onChange={(e) => setTaskFromDate(e.target.value)} aria-label="Task from date" />
+            <div className="filter-row task-filter-row">
+              <button className="date-display" onClick={openTaskDateDialog} aria-label="Select task date range">
+                {taskFromDate || 'yyyy-mm-dd'}
+              </button>
               <span>→</span>
-              <input type="date" value={taskToDate} onChange={(e) => setTaskToDate(e.target.value)} aria-label="Task to date" />
+              <button className="date-display" onClick={openTaskDateDialog} aria-label="Select task date range">
+                {taskToDate || 'yyyy-mm-dd'}
+              </button>
+              <button className="calendar-trigger" onClick={openTaskDateDialog} aria-label="Open task date range dialog">📅</button>
               <label htmlFor="taskPageSize" className="show-label">Show</label>
               <select id="taskPageSize" value={taskPageSize} onChange={(e) => setTaskPageSize(Number(e.target.value))}>
                 <option value={5}>5</option>
@@ -416,6 +440,28 @@ export default function HomePage() {
                 <option value={20}>20</option>
               </select>
             </div>
+
+            {taskDateDialogOpen && (
+              <div className="date-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Select task date range">
+                <div className="date-dialog">
+                  <h3>Select date range</h3>
+                  <div className="date-dialog-inputs">
+                    <div>
+                      <label htmlFor="taskDateDraftFrom">From</label>
+                      <input id="taskDateDraftFrom" type="date" value={taskDateDraftFrom} onChange={(e) => setTaskDateDraftFrom(e.target.value)} />
+                    </div>
+                    <div>
+                      <label htmlFor="taskDateDraftTo">To</label>
+                      <input id="taskDateDraftTo" type="date" value={taskDateDraftTo} onChange={(e) => setTaskDateDraftTo(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="date-dialog-actions">
+                    <button className="mini-btn" onClick={cancelTaskDateDialog}>Cancel</button>
+                    <button className="btn btn-primary" onClick={confirmTaskDateDialog}>Confirm</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <ul className="task-list">
               {pagedTasks.length ? (
