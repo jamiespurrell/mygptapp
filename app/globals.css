@@ -44,7 +44,7 @@ textarea { resize: vertical; min-height: 110px; }
 .tab-btn { border: 1px solid #365183; background: #071227; color: #d9e6ff; border-radius: 999px; padding: 0.3rem 0.75rem; font-weight: 700; cursor: pointer; }
 .tab-btn.active { background: #2d6ff1; border-color: #2d6ff1; color: white; }
 .filter-row { display: grid; grid-template-columns: 1fr auto 1fr auto 90px; gap: 0.5rem; align-items: center; margin-top: 0.9rem; }
-.task-filter-row { grid-template-columns: 1fr auto auto 1fr auto auto 90px; }
+.task-filter-row { grid-template-columns: 1fr auto 1fr auto auto 90px; }
 .filter-row span { color: #94a6ca; font-weight: 700; text-align: center; }
 .filter-row input, .filter-row select { margin: 0; }
 .show-label { margin: 0; text-align: right; }
@@ -78,7 +78,7 @@ textarea { resize: vertical; min-height: 110px; }
   .topbar, .app { padding: 1rem; }
   .stack-mobile { flex-direction: column; }
   .filter-row { grid-template-columns: 1fr auto 1fr; }
-  .task-filter-row { grid-template-columns: 1fr auto auto 1fr auto auto; }
+  .task-filter-row { grid-template-columns: 1fr auto 1fr auto auto; }
   .show-label { text-align: left; }
   .date-dialog-inputs { grid-template-columns: 1fr; }
 }

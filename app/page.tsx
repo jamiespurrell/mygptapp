@@ -428,12 +428,11 @@ export default function HomePage() {
               <button className="date-display" onClick={openTaskDateDialog} aria-label="Select task from date">
                 {taskFromDate || 'yyyy-mm-dd'}
               </button>
-              <button className="calendar-trigger" onClick={openTaskDateDialog} aria-label="Open task date range dialog from date">📅</button>
               <span>→</span>
               <button className="date-display" onClick={openTaskDateDialog} aria-label="Select task to date">
                 {taskToDate || 'yyyy-mm-dd'}
               </button>
-              <button className="calendar-trigger" onClick={openTaskDateDialog} aria-label="Open task date range dialog to date">📅</button>
+              <button className="calendar-trigger" onClick={openTaskDateDialog} aria-label="Open task date range dialog">📅</button>
               <label htmlFor="taskPageSize" className="show-label">Show</label>
               <select id="taskPageSize" value={taskPageSize} onChange={(e) => setTaskPageSize(Number(e.target.value))}>
                 <option value={5}>5</option>
