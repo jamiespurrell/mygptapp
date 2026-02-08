@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -23,12 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <h1>Daily Voice Notes &amp; Task Planner</h1>
             <div className="auth-actions">
               <SignedOut>
-                <SignInButton>
-                  <button className="btn btn-primary">Sign In</button>
-                </SignInButton>
-                <SignUpButton>
-                  <button className="btn btn-muted">Sign Up</button>
-                </SignUpButton>
+                <span className="status">Please sign in below to continue.</span>
               </SignedOut>
               <SignedIn>
                 <UserButton />
