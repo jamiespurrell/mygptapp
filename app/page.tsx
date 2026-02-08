@@ -470,6 +470,10 @@ export default function HomePage() {
               )}
             </ul>
 
+            {taskTab === 'deleted' && (
+              <p className="status retention-note">Deleted tasks are permanently removed 30 days after the task was created.</p>
+            )}
+
             <div className="pagination-row">
               <button className="mini-btn" disabled={taskPage === 1} onClick={() => setTaskPage((prev) => Math.max(1, prev - 1))}>Prev</button>
               <span>Page {Math.min(taskPage, taskTotalPages)} of {taskTotalPages}</span>
