@@ -7,3 +7,8 @@ npm-debug.log*
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+/app/generated/prisma
+
+# macOS
+.DS_Store
